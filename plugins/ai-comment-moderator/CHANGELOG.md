@@ -5,6 +5,33 @@ All notable changes to AI Comment Moderator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2025-01-13
+
+### Fixed
+- **🎯 MAJOR**: Sync now tracks pagination state - each click fetches NEXT batch, not same batch
+  - Previously: Clicked sync 3 times, only worked once (fetched pages 1-5 repeatedly)
+  - Now: Click 1 = pages 1-5, Click 2 = pages 6-10, Click 3 = pages 11-15, etc.
+  - Pagination state persists between syncs using `wp_options` table
+  - Auto-resets to page 1 when sync completes or reaches end
+
+### Added
+- **Reset button** for each remote site to manually restart pagination from page 1
+- **Update tracking**: Now reports both new inserts and existing comment updates
+- **Local cache count**: Shows total comments in local database
+- **Better progress feedback**: "Synced pages 6-10. 500 new, 0 updated. Total in cache: 1,000"
+- **Completion detection**: Message shows "✓ All synced!" when complete
+
+### Changed
+- `store_remote_comments()` now returns both `stored` and `updated` counts
+- Sync message format completely redesigned for clarity
+- Shows exact page range synced, new vs updated counts, and remaining count
+
+### Technical
+- Added `ai_moderator_last_sync_page_site_{site_id}` option for state tracking
+- New AJAX handler: `ai_moderator_reset_sync_pagination`
+- Pagination resets automatically when fewer than 100 comments returned
+- See `SYNC_FIX_V2.md` for detailed technical explanation
+
 ## [1.0.2] - 2025-01-13
 
 ### Fixed

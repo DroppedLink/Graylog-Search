@@ -196,7 +196,7 @@ class AI_Comment_Moderator_Remote_Site_Manager {
         }
         
         // Store comments in local cache
-        $stored = self::store_remote_comments($site_id, $comments);
+        $store_result = self::store_remote_comments($site_id, $comments);
         
         // Update site stats
         self::update_site_stats($site_id);
@@ -209,7 +209,8 @@ class AI_Comment_Moderator_Remote_Site_Manager {
             'success' => true,
             'comments' => $comments,
             'count' => count($comments),
-            'stored' => $stored,
+            'stored' => $store_result['stored'],
+            'updated' => $store_result['updated'],
             'total_available' => $total_comments,
             'total_pages' => $total_pages,
             'current_page' => $page
@@ -224,6 +225,7 @@ class AI_Comment_Moderator_Remote_Site_Manager {
         
         $table = $wpdb->prefix . 'ai_remote_comments';
         $stored = 0;
+        $updated = 0;
         
         foreach ($comments as $comment) {
             // Check if already exists
@@ -248,13 +250,14 @@ class AI_Comment_Moderator_Remote_Site_Manager {
             
             if ($exists) {
                 $wpdb->update($table, $data, array('id' => $exists));
+                $updated++;
             } else {
                 $wpdb->insert($table, $data);
                 $stored++;
             }
         }
         
-        return $stored;
+        return array('stored' => $stored, 'updated' => $updated);
     }
     
     /**
@@ -517,8 +520,11 @@ function ai_moderator_list_remote_sites_page() {
                         </td>
                         <td>
                             <button type="button" class="button button-small sync-remote-site-btn" data-site-id="<?php echo $site->id; ?>" data-site-name="<?php echo esc_attr($site->site_name); ?>">Sync Now</button>
-                            <span class="sync-status-<?php echo $site->id; ?>" style="margin-left: 5px;"></span>
-                            <a href="<?php echo admin_url('admin.php?page=ai-comment-moderator-remote&action=edit&site=' . $site->id); ?>" class="button button-small">Edit</a>
+                            <button type="button" class="button button-small reset-sync-btn" data-site-id="<?php echo $site->id; ?>" style="margin-left: 3px;" title="Reset sync pagination">Reset</button>
+                            <br>
+                            <span class="sync-status-<?php echo $site->id; ?>" style="margin-top: 5px; display: inline-block; font-size: 0.9em;"></span>
+                            <br>
+                            <a href="<?php echo admin_url('admin.php?page=ai-comment-moderator-remote&action=edit&site=' . $site->id); ?>" class="button button-small" style="margin-top: 3px;">Edit</a>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -644,6 +650,37 @@ function ai_moderator_list_remote_sites_page() {
                     $button.prop('disabled', false).text('Sync Now');
                 });
             });
+            
+            // Reset sync pagination handler
+            $('.reset-sync-btn').on('click', function() {
+                var $button = $(this);
+                var siteId = $button.data('site-id');
+                var $status = $('.sync-status-' + siteId);
+                
+                if (!confirm('Reset sync pagination for this site?\n\nNext sync will start from page 1 again.')) {
+                    return;
+                }
+                
+                $button.prop('disabled', true).text('Resetting...');
+                
+                $.post(ajaxurl, {
+                    action: 'ai_moderator_reset_sync_pagination',
+                    nonce: '<?php echo wp_create_nonce('ai_comment_moderator_nonce'); ?>',
+                    site_id: siteId
+                }, function(response) {
+                    if (response.success) {
+                        $status.html('<span style="color: #46b450;">✓ Reset - next sync starts from page 1</span>');
+                        $button.prop('disabled', false).text('Reset');
+                        setTimeout(function() { $status.html(''); }, 3000);
+                    } else {
+                        $status.html('<span style="color: #dc3232;">✗ ' + response.data + '</span>');
+                        $button.prop('disabled', false).text('Reset');
+                    }
+                }).fail(function() {
+                    $status.html('<span style="color: #dc3232;">✗ Network error</span>');
+                    $button.prop('disabled', false).text('Reset');
+                });
+            });
         });
         </script>
     </div>
@@ -671,6 +708,29 @@ function ai_moderator_sync_remote_site($site_id) {
     exit;
 }
 
+// AJAX handler for resetting sync pagination
+add_action('wp_ajax_ai_moderator_reset_sync_pagination', 'ai_moderator_ajax_reset_sync_pagination');
+function ai_moderator_ajax_reset_sync_pagination() {
+    check_ajax_referer('ai_comment_moderator_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Insufficient permissions');
+    }
+    
+    $site_id = isset($_POST['site_id']) ? intval($_POST['site_id']) : 0;
+    
+    if (!$site_id) {
+        wp_send_json_error('Invalid site ID');
+    }
+    
+    // Reset the pagination counter for this site
+    delete_option("ai_moderator_last_sync_page_site_{$site_id}");
+    
+    wp_send_json_success(array(
+        'message' => 'Sync pagination reset. Next sync will start from page 1.'
+    ));
+}
+
 // AJAX handler for syncing remote sites
 add_action('wp_ajax_ai_moderator_sync_remote_site', 'ai_moderator_ajax_sync_remote_site');
 function ai_moderator_ajax_sync_remote_site() {
@@ -686,31 +746,49 @@ function ai_moderator_ajax_sync_remote_site() {
         wp_send_json_error('Invalid site ID');
     }
     
+    // Get the last synced page for this site (to resume where we left off)
+    $last_page = get_option("ai_moderator_last_sync_page_site_{$site_id}", 0);
+    $start_page = $last_page + 1; // Start from next page
+    
     // Fetch more comments - up to 500 in batches
     $total_fetched = 0;
     $total_stored = 0;
+    $total_updated = 0;
     $total_available = null;
     $total_pages_available = null;
-    $pages = 5; // Fetch 5 pages of 100 = 500 comments max
+    $pages_to_fetch = 5; // Fetch 5 pages of 100 = 500 comments max
+    $end_page = $start_page + $pages_to_fetch - 1;
     
-    for ($page = 1; $page <= $pages; $page++) {
+    for ($page = $start_page; $page <= $end_page; $page++) {
         $result = AI_Comment_Moderator_Remote_Site_Manager::fetch_comments($site_id, 100, 'hold', $page);
         
         if (!$result['success']) {
-            wp_send_json_error('Sync failed: ' . $result['error']);
+            wp_send_json_error('Sync failed on page ' . $page . ': ' . $result['error']);
         }
         
         $total_fetched += $result['count'];
         $total_stored += $result['stored'];
+        $total_updated += $result['updated'];
         
         // Capture total available from first page
-        if ($page === 1 && isset($result['total_available'])) {
+        if ($page === $start_page && isset($result['total_available'])) {
             $total_available = $result['total_available'];
             $total_pages_available = $result['total_pages'];
         }
         
+        // Update last synced page
+        update_option("ai_moderator_last_sync_page_site_{$site_id}", $page);
+        
         // If we got fewer than 100, there are no more comments
         if ($result['count'] < 100) {
+            // Reset to page 0 so next sync starts from beginning
+            update_option("ai_moderator_last_sync_page_site_{$site_id}", 0);
+            break;
+        }
+        
+        // If this is the last page available, reset counter
+        if ($total_pages_available !== null && $page >= $total_pages_available) {
+            update_option("ai_moderator_last_sync_page_site_{$site_id}", 0);
             break;
         }
         
@@ -718,13 +796,26 @@ function ai_moderator_ajax_sync_remote_site() {
         usleep(100000); // 0.1 seconds
     }
     
+    // Calculate how many are in local cache now
+    global $wpdb;
+    $local_count = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM {$wpdb->prefix}ai_remote_comments WHERE site_id = %d",
+        $site_id
+    ));
+    
     // Build message
-    $message = "Successfully synced {$total_stored} new comment(s) from remote site. Total fetched: {$total_fetched}";
+    $message = "Synced pages {$start_page}-{$page}. ";
+    $message .= "{$total_stored} new, {$total_updated} updated. ";
+    $message .= "Total in cache: {$local_count}";
+    
     if ($total_available !== null) {
-        $message .= ". Total pending on remote site: {$total_available}";
-        if ($total_stored < $total_available) {
-            $remaining = $total_available - $total_fetched;
-            $message .= " ({$remaining} remaining - click Sync again to fetch more)";
+        $message .= ". Remote has: {$total_available} pending";
+        
+        if ($local_count < $total_available) {
+            $remaining = $total_available - $local_count;
+            $message .= " ({$remaining} not yet synced - click Sync again)";
+        } else {
+            $message .= " ✓ All synced!";
         }
     }
     
@@ -732,8 +823,11 @@ function ai_moderator_ajax_sync_remote_site() {
         'message' => $message,
         'fetched' => $total_fetched,
         'stored' => $total_stored,
+        'updated' => $total_updated,
+        'local_count' => $local_count,
         'total_available' => $total_available,
-        'has_more' => ($total_available !== null && $total_fetched < $total_available)
+        'pages_synced' => "{$start_page}-{$page}",
+        'has_more' => ($total_available !== null && $local_count < $total_available)
     ));
 }
 
