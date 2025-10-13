@@ -2,6 +2,30 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.6.0] - 2025-10-13
+
+### Added
+- **Enhanced Filter Popup**: Added multiple action options when highlighting text
+  - Filter Out: Exclude rows containing the selected text (existing functionality)
+  - Keep Only: Show only rows containing the selected text
+  - Highlight: Highlight all occurrences of the text with yellow background
+  - Copy: Copy the selected text to clipboard
+  - Modern popup UI with icons and hover effects
+- **Multi-Value Input Support**: Text inputs now support multiple values
+  - Changed from single-line inputs to 3-line textareas
+  - Support for newline-separated values (one per line)
+  - Support for comma-separated values
+  - Support for space-separated values (backward compatible)
+  - Applies to Hostname, Search Terms, and Filter Out fields
+  - Allows bulk searches and filtering
+
+### Changed
+- **UI Enhancement**: All text input fields converted to expandable textareas
+  - Default 3 rows with vertical resize capability
+  - Better visibility for long lists of values
+  - Improved placeholder text with multi-value instructions
+  - Consistent styling across admin and shortcode forms
+
 ## [1.5.7] - 2025-10-13
 
 ### Changed

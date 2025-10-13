@@ -43,26 +43,26 @@ function graylog_search_shortcode($atts) {
                 <div class="graylog-form-row">
                     <div class="graylog-form-col">
                         <label for="<?php echo esc_attr($instance_id); ?>_fqdn">Hostname:</label>
-                        <input type="text" 
-                               id="<?php echo esc_attr($instance_id); ?>_fqdn" 
-                               class="graylog-input search-fqdn"
-                               placeholder="e.g., server01 or server01.example.com">
+                        <textarea id="<?php echo esc_attr($instance_id); ?>_fqdn" 
+                                  class="graylog-input search-fqdn"
+                                  rows="3"
+                                  placeholder="e.g., server01 or server01.example.com&#10;Multiple: one per line or comma-separated"></textarea>
                     </div>
                     
                     <div class="graylog-form-col">
                         <label for="<?php echo esc_attr($instance_id); ?>_terms">Search Terms:</label>
-                        <input type="text" 
-                               id="<?php echo esc_attr($instance_id); ?>_terms" 
-                               class="graylog-input search-terms"
-                               placeholder="e.g., error, warning">
+                        <textarea id="<?php echo esc_attr($instance_id); ?>_terms" 
+                                  class="graylog-input search-terms"
+                                  rows="3"
+                                  placeholder="e.g., error, warning&#10;Multiple: one per line or comma-separated"></textarea>
                     </div>
                     
                     <div class="graylog-form-col">
                         <label for="<?php echo esc_attr($instance_id); ?>_filter">Filter Out:</label>
-                        <input type="text" 
-                               id="<?php echo esc_attr($instance_id); ?>_filter" 
-                               class="graylog-input filter-out"
-                               placeholder="e.g., debug, info">
+                        <textarea id="<?php echo esc_attr($instance_id); ?>_filter" 
+                                  class="graylog-input filter-out"
+                                  rows="3"
+                                  placeholder="e.g., debug, info&#10;Multiple: one per line or comma-separated"></textarea>
                     </div>
                 </div>
                 

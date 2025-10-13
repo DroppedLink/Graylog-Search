@@ -6,7 +6,14 @@ A powerful WordPress plugin that provides a user-friendly interface for searchin
 
 ### 🔍 Search & Filter
 - **Simple Search Interface**: Search by FQDN, additional terms, and time range (hour/day/week)
-- **Interactive Filtering**: Highlight text in results to instantly filter it out
+- **Multi-Value Input**: Enter multiple hostnames, search terms, or filters
+  - One per line, comma-separated, or space-separated
+  - 3-line textareas with vertical resize
+- **Enhanced Interactive Filtering**: Highlight any text in results for advanced actions
+  - **Filter Out**: Exclude rows containing the text
+  - **Keep Only**: Show only rows containing the text
+  - **Highlight**: Highlight all occurrences with yellow background
+  - **Copy**: Copy selected text to clipboard
 - **Active Filters Display**: See and manage all active filters with one-click removal
 
 ### 🌐 IP Enrichment

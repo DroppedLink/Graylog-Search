@@ -57,31 +57,79 @@ function graylog_search_logs_handler() {
     wp_send_json_success($results);
 }
 
+// Parse multi-value input (newlines, commas, or spaces)
+function graylog_parse_multivalue_input($input) {
+    $values = array();
+    
+    // First split by newlines
+    $lines = preg_split('/\r\n|\r|\n/', $input);
+    
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (empty($line)) {
+            continue;
+        }
+        
+        // Check if line contains commas
+        if (strpos($line, ',') !== false) {
+            // Split by comma
+            $parts = explode(',', $line);
+            foreach ($parts as $part) {
+                $part = trim($part);
+                if (!empty($part)) {
+                    $values[] = $part;
+                }
+            }
+        } else {
+            // Check if line contains spaces (for backward compatibility)
+            if (strpos($line, ' ') !== false) {
+                // Split by space
+                $parts = explode(' ', $line);
+                foreach ($parts as $part) {
+                    $part = trim($part);
+                    if (!empty($part)) {
+                        $values[] = $part;
+                    }
+                }
+            } else {
+                // Single value
+                $values[] = $line;
+            }
+        }
+    }
+    
+    return $values;
+}
+
 // Build Graylog search query
 function graylog_build_query($fqdn, $search_terms, $filter_out) {
     $query_parts = array();
     
     // Add hostname/FQDN search (searches the fqdn field with trailing wildcard)
     if (!empty($fqdn)) {
-        // Add trailing wildcard for partial matching unless user already specified wildcards
-        // Only trailing wildcard to avoid expensive leading wildcard searches
-        if (strpos($fqdn, '*') === false && strpos($fqdn, '?') === false) {
-            $fqdn = $fqdn . '*';
-        }
+        // Parse multiple values: newlines, commas, and spaces
+        $fqdn_values = graylog_parse_multivalue_input($fqdn);
         
-        // Only add quotes if the value contains spaces or special characters (rare for hostnames)
-        if (preg_match('/\s/', $fqdn)) {
-            $query_parts[] = 'fqdn:"' . $fqdn . '"';
-        } else {
-            $query_parts[] = 'fqdn:' . $fqdn;
+        foreach ($fqdn_values as $fqdn_item) {
+            // Add trailing wildcard for partial matching unless user already specified wildcards
+            // Only trailing wildcard to avoid expensive leading wildcard searches
+            if (strpos($fqdn_item, '*') === false && strpos($fqdn_item, '?') === false) {
+                $fqdn_item = $fqdn_item . '*';
+            }
+            
+            // Only add quotes if the value contains spaces or special characters (rare for hostnames)
+            if (preg_match('/\s/', $fqdn_item)) {
+                $query_parts[] = 'fqdn:"' . $fqdn_item . '"';
+            } else {
+                $query_parts[] = 'fqdn:' . $fqdn_item;
+            }
         }
     }
     
     // Add additional search terms
     if (!empty($search_terms)) {
-        $terms = explode(' ', $search_terms);
+        $terms = graylog_parse_multivalue_input($search_terms);
         foreach ($terms as $term) {
-            $term = trim($term);
             if (!empty($term)) {
                 $query_parts[] = $term;
             }
@@ -90,9 +138,8 @@ function graylog_build_query($fqdn, $search_terms, $filter_out) {
     
     // Add filter out terms (NOT)
     if (!empty($filter_out)) {
-        $filters = explode(' ', $filter_out);
+        $filters = graylog_parse_multivalue_input($filter_out);
         foreach ($filters as $filter) {
-            $filter = trim($filter);
             if (!empty($filter)) {
                 $query_parts[] = 'NOT ' . $filter;
             }

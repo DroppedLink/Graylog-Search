@@ -34,12 +34,12 @@ function graylog_search_page() {
                             <label for="search_fqdn">Hostname</label>
                         </th>
                         <td>
-                            <input type="text" 
-                                   id="search_fqdn" 
-                                   name="search_fqdn" 
-                                   class="regular-text"
-                                   placeholder="e.g., server01 or server01.example.com">
-                            <p class="description">Search by hostname or FQDN</p>
+                            <textarea id="search_fqdn" 
+                                      name="search_fqdn" 
+                                      class="regular-text"
+                                      rows="3"
+                                      placeholder="e.g., server01 or server01.example.com&#10;Multiple hostnames: one per line or comma-separated"></textarea>
+                            <p class="description">Search by hostname or FQDN (one per line or comma-separated)</p>
                         </td>
                     </tr>
                     
@@ -48,12 +48,12 @@ function graylog_search_page() {
                             <label for="search_terms">Additional Search Terms</label>
                         </th>
                         <td>
-                            <input type="text" 
-                                   id="search_terms" 
-                                   name="search_terms" 
-                                   class="regular-text"
-                                   placeholder="error, warning, specific text">
-                            <p class="description">Enter additional keywords or phrases (space-separated)</p>
+                            <textarea id="search_terms" 
+                                      name="search_terms" 
+                                      class="regular-text"
+                                      rows="3"
+                                      placeholder="error, warning, specific text&#10;Multiple terms: one per line or comma-separated"></textarea>
+                            <p class="description">Enter additional keywords or phrases (one per line or comma-separated)</p>
                         </td>
                     </tr>
                     
@@ -62,12 +62,12 @@ function graylog_search_page() {
                             <label for="filter_out">Filter Out (Exclude)</label>
                         </th>
                         <td>
-                            <input type="text" 
-                                   id="filter_out" 
-                                   name="filter_out" 
-                                   class="regular-text"
-                                   placeholder="debug, info">
-                            <p class="description">Exclude messages containing these terms (space-separated)</p>
+                            <textarea id="filter_out" 
+                                      name="filter_out" 
+                                      class="regular-text"
+                                      rows="3"
+                                      placeholder="debug, info&#10;Multiple terms: one per line or comma-separated"></textarea>
+                            <p class="description">Exclude messages containing these terms (one per line or comma-separated)</p>
                         </td>
                     </tr>
                     

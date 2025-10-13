@@ -317,23 +317,56 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Show filter popup
+    // Show filter popup with multiple options
     function showFilterPopup(text, x, y) {
         var truncatedText = text.length > 30 ? text.substring(0, 30) + '...' : text;
         
         var popup = $('<div class="filter-popup"></div>');
-        popup.html('<button class="filter-out-btn"><span class="dashicons dashicons-dismiss"></span> Filter out "' + escapeHtml(truncatedText) + '"</button>');
+        popup.html(`
+            <div class="filter-popup-actions">
+                <button class="filter-action-btn filter-out-btn" data-action="filter-out">
+                    <span class="dashicons dashicons-dismiss"></span> Filter Out
+                </button>
+                <button class="filter-action-btn keep-only-btn" data-action="keep-only">
+                    <span class="dashicons dashicons-visibility"></span> Keep Only
+                </button>
+                <button class="filter-action-btn highlight-btn" data-action="highlight">
+                    <span class="dashicons dashicons-art"></span> Highlight
+                </button>
+                <button class="filter-action-btn copy-btn" data-action="copy">
+                    <span class="dashicons dashicons-clipboard"></span> Copy
+                </button>
+            </div>
+            <div class="filter-popup-text">"${escapeHtml(truncatedText)}"</div>
+        `);
         popup.css({
             position: 'absolute',
             left: x + 10 + 'px',
-            top: y - 40 + 'px'
+            top: y - 80 + 'px'
         });
         
         $('body').append(popup);
         
-        // Handle filter button click
-        popup.find('.filter-out-btn').on('click', function() {
-            addFilter(text);
+        // Handle action button clicks
+        popup.find('.filter-action-btn').on('click', function(e) {
+            e.stopPropagation();
+            var action = $(this).data('action');
+            
+            switch(action) {
+                case 'filter-out':
+                    addFilter(text);
+                    break;
+                case 'keep-only':
+                    addKeepOnlyFilter(text);
+                    break;
+                case 'highlight':
+                    highlightText(text);
+                    break;
+                case 'copy':
+                    copyToClipboard(text);
+                    break;
+            }
+            
             popup.remove();
             window.getSelection().removeAllRanges();
         });
@@ -370,6 +403,80 @@ jQuery(document).ready(function($) {
         activeFilters = [];
         updateFilterDisplay();
         applyFilters();
+    }
+    
+    // Keep only rows containing text
+    function addKeepOnlyFilter(text) {
+        // Hide all rows that DON'T contain the text
+        $('.graylog-results-table tbody tr').each(function() {
+            var $row = $(this);
+            var rowText = $row.text().toLowerCase();
+            var searchText = text.toLowerCase();
+            
+            if (rowText.indexOf(searchText) === -1) {
+                $row.addClass('filtered-out');
+            } else {
+                $row.removeClass('filtered-out');
+            }
+        });
+        
+        updateResultCount();
+        showNotification('Showing only rows containing: "' + text + '"', 'info');
+    }
+    
+    // Highlight all occurrences of text
+    function highlightText(text) {
+        // Remove existing highlights for this text first
+        $('.graylog-results-table .highlight-mark[data-highlight="' + escapeHtml(text) + '"]').each(function() {
+            var $this = $(this);
+            $this.replaceWith($this.html());
+        });
+        
+        // Add new highlights
+        $('.graylog-results-table tbody tr').each(function() {
+            var $row = $(this);
+            $row.find('td').each(function() {
+                var $td = $(this);
+                var html = $td.html();
+                var escapedText = escapeRegExp(text);
+                var regex = new RegExp('(' + escapedText + ')', 'gi');
+                var newHtml = html.replace(regex, '<mark class="highlight-mark" data-highlight="' + escapeHtml(text) + '">$1</mark>');
+                $td.html(newHtml);
+            });
+        });
+        
+        showNotification('Highlighted: "' + text + '"', 'success');
+    }
+    
+    // Copy text to clipboard
+    function copyToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showNotification('Copied to clipboard: "' + text + '"', 'success');
+            }).catch(function(err) {
+                showNotification('Failed to copy to clipboard', 'error');
+            });
+        } else {
+            // Fallback for older browsers
+            var textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showNotification('Copied to clipboard: "' + text + '"', 'success');
+            } catch (err) {
+                showNotification('Failed to copy to clipboard', 'error');
+            }
+            document.body.removeChild(textArea);
+        }
+    }
+    
+    // Escape special regex characters
+    function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
     
     // Update filter display
