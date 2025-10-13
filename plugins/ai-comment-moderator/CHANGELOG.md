@@ -5,6 +5,30 @@ All notable changes to AI Comment Moderator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2025-01-13
+
+### Added
+- **Configurable sync batch size**: Choose 500/1000/2000/5000/10000 comments per sync in Settings
+  - Default increased from 500 to 1,000 comments for faster syncing
+  - Higher values reduce clicks needed but may timeout on slow servers
+- **Full remote site editing interface** with:
+  - Edit site name, URL, username, and application password
+  - Toggle site active/inactive without deleting
+  - View site statistics (total comments, pending, last sync, created date)
+  - Advanced actions: Reset pagination, Clear cache, Delete site
+  - Security: Application password can be updated without showing current value
+- **Clear comment cache button**: Delete all cached comments from a site to re-sync fresh
+
+### Changed
+- Default sync batch size: 500 → 1,000 comments (10 pages instead of 5)
+- Remote site edit page now fully functional (was placeholder "coming soon")
+- Edit page includes comprehensive site management tools
+
+### Technical
+- New setting: `ai_comment_moderator_sync_pages_per_batch` (default: 10)
+- New AJAX handler: `ai_moderator_clear_site_cache`
+- Site editing validates all fields and only updates password if provided
+
 ## [1.0.3] - 2025-01-13
 
 ### Fixed

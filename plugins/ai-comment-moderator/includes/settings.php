@@ -175,6 +175,7 @@ function ai_comment_moderator_settings_page() {
         update_option('ai_comment_moderator_batch_size', intval($_POST['batch_size']));
         update_option('ai_comment_moderator_auto_process', isset($_POST['auto_process']) ? '1' : '0');
         update_option('ai_comment_moderator_rate_limit', intval($_POST['rate_limit']));
+        update_option('ai_comment_moderator_sync_pages_per_batch', intval($_POST['sync_pages_per_batch']));
         update_option('ai_comment_moderator_keep_data_on_uninstall', isset($_POST['keep_data_on_uninstall']) ? '1' : '0');
         
         echo '<div class="notice notice-success"><p>Settings saved successfully!</p></div>';
@@ -257,6 +258,30 @@ function ai_comment_moderator_settings_page() {
                     <td>
                         <input type="number" name="rate_limit" value="<?php echo esc_attr($rate_limit); ?>" min="1" max="60" class="small-text" />
                         <p class="description">Maximum API requests per minute to prevent overloading Ollama</p>
+                    </td>
+                </tr>
+            </table>
+            
+            <h2>Remote Site Sync Settings</h2>
+            <table class="form-table">
+                <tr>
+                    <th scope="row">Comments Per Sync</th>
+                    <td>
+                        <?php
+                        $sync_pages = get_option('ai_comment_moderator_sync_pages_per_batch', 10);
+                        ?>
+                        <select name="sync_pages_per_batch">
+                            <option value="5" <?php selected($sync_pages, 5); ?>>500 comments (5 pages × 100)</option>
+                            <option value="10" <?php selected($sync_pages, 10); ?>>1,000 comments (10 pages × 100)</option>
+                            <option value="20" <?php selected($sync_pages, 20); ?>>2,000 comments (20 pages × 100)</option>
+                            <option value="50" <?php selected($sync_pages, 50); ?>>5,000 comments (50 pages × 100)</option>
+                            <option value="100" <?php selected($sync_pages, 100); ?>>10,000 comments (100 pages × 100)</option>
+                        </select>
+                        <p class="description">
+                            Number of comments to fetch from remote sites per sync operation.<br>
+                            <strong>Higher values = fewer clicks needed, but may cause timeouts on slow servers.</strong><br>
+                            Default: 1,000 (good balance for most sites)
+                        </p>
                     </td>
                 </tr>
             </table>

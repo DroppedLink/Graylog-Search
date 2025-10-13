@@ -696,9 +696,246 @@ function ai_moderator_add_remote_site_page() {
 
 function ai_moderator_edit_remote_site_page($site_id) {
     $site = AI_Comment_Moderator_Remote_Site_Manager::get_site($site_id);
-    echo '<div class="wrap"><h1>Edit Remote Site</h1>';
-    echo '<p>Site editing interface coming soon. For now, delete and re-add the site.</p>';
-    echo '<p><a href="' . admin_url('admin.php?page=ai-comment-moderator-remote') . '">← Back to Remote Sites</a></p></div>';
+    
+    if (!$site) {
+        echo '<div class="wrap"><h1>Edit Remote Site</h1>';
+        echo '<div class="notice notice-error"><p>Site not found.</p></div>';
+        echo '<p><a href="' . admin_url('admin.php?page=ai-comment-moderator-remote') . '">← Back to Remote Sites</a></p></div>';
+        return;
+    }
+    
+    // Handle form submission
+    if (isset($_POST['update_remote_site'])) {
+        check_admin_referer('ai_moderator_edit_site_nonce');
+        
+        $site_name = sanitize_text_field($_POST['site_name']);
+        $site_url = trailingslashit(sanitize_url($_POST['site_url']));
+        $username = sanitize_text_field($_POST['username']);
+        $app_password = sanitize_text_field($_POST['app_password']);
+        $is_active = isset($_POST['is_active']) ? 1 : 0;
+        
+        // Validate required fields
+        if (empty($site_name) || empty($site_url) || empty($username)) {
+            echo '<div class="notice notice-error"><p>All fields except Application Password are required.</p></div>';
+        } else {
+            // Update site
+            global $wpdb;
+            $update_data = array(
+                'site_name' => $site_name,
+                'site_url' => $site_url,
+                'username' => $username,
+                'is_active' => $is_active
+            );
+            
+            // Only update password if provided
+            if (!empty($app_password)) {
+                $update_data['app_password'] = AI_Comment_Moderator_Remote_Site_Manager::encrypt_password($app_password);
+            }
+            
+            $updated = $wpdb->update(
+                $wpdb->prefix . 'ai_remote_sites',
+                $update_data,
+                array('id' => $site_id)
+            );
+            
+            if ($updated !== false) {
+                echo '<div class="notice notice-success"><p>Site updated successfully!</p></div>';
+                // Refresh site data
+                $site = AI_Comment_Moderator_Remote_Site_Manager::get_site($site_id);
+            } else {
+                echo '<div class="notice notice-error"><p>Failed to update site. Please try again.</p></div>';
+            }
+        }
+    }
+    
+    ?>
+    <div class="wrap">
+        <h1>Edit Remote Site</h1>
+        <p><a href="<?php echo admin_url('admin.php?page=ai-comment-moderator-remote'); ?>">← Back to Remote Sites</a></p>
+        
+        <div class="card" style="max-width: 800px; margin-top: 20px;">
+            <h2><?php echo esc_html($site->site_name); ?></h2>
+            
+            <form method="post" action="">
+                <?php wp_nonce_field('ai_moderator_edit_site_nonce'); ?>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><label for="site_name">Site Name</label></th>
+                        <td>
+                            <input type="text" name="site_name" id="site_name" class="regular-text" value="<?php echo esc_attr($site->site_name); ?>" required />
+                            <p class="description">Friendly name to identify this site</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="site_url">Site URL</label></th>
+                        <td>
+                            <input type="url" name="site_url" id="site_url" class="regular-text" value="<?php echo esc_attr($site->site_url); ?>" required />
+                            <p class="description">Must include https:// or http://</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="username">Username</label></th>
+                        <td>
+                            <input type="text" name="username" id="username" class="regular-text" value="<?php echo esc_attr($site->username); ?>" required />
+                            <p class="description">WordPress username on the remote site</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="app_password">Application Password</label></th>
+                        <td>
+                            <input type="text" name="app_password" id="app_password" class="regular-text" placeholder="Leave blank to keep current password" />
+                            <p class="description">
+                                <strong>Only fill this if changing the password.</strong><br>
+                                Current password is encrypted and cannot be shown for security reasons.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Status</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="is_active" value="1" <?php checked($site->is_active, 1); ?> />
+                                Active (uncheck to disable syncing without deleting the site)
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Statistics</th>
+                        <td>
+                            <p><strong>Total Comments:</strong> <?php echo number_format($site->total_comments); ?></p>
+                            <p><strong>Pending Moderation:</strong> <?php echo number_format($site->pending_moderation); ?></p>
+                            <p><strong>Last Sync:</strong> 
+                                <?php 
+                                if ($site->last_sync) {
+                                    echo human_time_diff(strtotime($site->last_sync), current_time('timestamp')) . ' ago';
+                                } else {
+                                    echo 'Never';
+                                }
+                                ?>
+                            </p>
+                            <p><strong>Created:</strong> 
+                                <?php echo human_time_diff(strtotime($site->created_at), current_time('timestamp')) . ' ago'; ?>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p class="submit">
+                    <input type="submit" name="update_remote_site" class="button button-primary" value="Update Site" />
+                    <a href="<?php echo admin_url('admin.php?page=ai-comment-moderator-remote'); ?>" class="button">Cancel</a>
+                </p>
+            </form>
+        </div>
+        
+        <div class="card" style="max-width: 800px; margin-top: 20px;">
+            <h3>Advanced Actions</h3>
+            <table class="form-table">
+                <tr>
+                    <th scope="row">Reset Sync Pagination</th>
+                    <td>
+                        <button type="button" class="button reset-sync-pagination-btn" data-site-id="<?php echo $site->id; ?>">
+                            Reset to Page 1
+                        </button>
+                        <span class="reset-status" style="margin-left: 10px;"></span>
+                        <p class="description">Resets the sync counter. Next sync will start from page 1 again.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">Clear Cached Comments</th>
+                    <td>
+                        <button type="button" class="button clear-cache-btn" data-site-id="<?php echo $site->id; ?>" data-site-name="<?php echo esc_attr($site->site_name); ?>">
+                            Clear Comment Cache
+                        </button>
+                        <span class="clear-status" style="margin-left: 10px;"></span>
+                        <p class="description">
+                            <strong style="color: #d63638;">Warning:</strong> This will delete all synced comments from this site in your local database.
+                            You'll need to sync again to re-fetch them.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">Delete Site</th>
+                    <td>
+                        <a href="<?php echo admin_url('admin.php?page=ai-comment-moderator-remote&action=delete&site_id=' . $site->id); ?>" 
+                           class="button button-link-delete"
+                           onclick="return confirm('Are you sure you want to delete this site?\n\nThis will remove the site configuration and all cached comments from this site.');">
+                            Delete Site Permanently
+                        </a>
+                        <p class="description">This action cannot be undone.</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            // Reset sync pagination
+            $('.reset-sync-pagination-btn').on('click', function() {
+                var $button = $(this);
+                var siteId = $button.data('site-id');
+                var $status = $('.reset-status');
+                
+                if (!confirm('Reset sync pagination? Next sync will start from page 1.')) {
+                    return;
+                }
+                
+                $button.prop('disabled', true).text('Resetting...');
+                
+                $.post(ajaxurl, {
+                    action: 'ai_moderator_reset_sync_pagination',
+                    nonce: '<?php echo wp_create_nonce('ai_comment_moderator_nonce'); ?>',
+                    site_id: siteId
+                }, function(response) {
+                    if (response.success) {
+                        $status.html('<span style="color: #46b450;">✓ Reset successful</span>');
+                        $button.prop('disabled', false).text('Reset to Page 1');
+                        setTimeout(function() { $status.html(''); }, 3000);
+                    } else {
+                        $status.html('<span style="color: #dc3232;">✗ ' + response.data + '</span>');
+                        $button.prop('disabled', false).text('Reset to Page 1');
+                    }
+                }).fail(function() {
+                    $status.html('<span style="color: #dc3232;">✗ Network error</span>');
+                    $button.prop('disabled', false).text('Reset to Page 1');
+                });
+            });
+            
+            // Clear comment cache
+            $('.clear-cache-btn').on('click', function() {
+                var $button = $(this);
+                var siteId = $button.data('site-id');
+                var siteName = $button.data('site-name');
+                var $status = $('.clear-status');
+                
+                if (!confirm('Clear ALL cached comments from "' + siteName + '"?\n\nThis will delete all comments from this site in your local database.\nYou\'ll need to sync again to re-fetch them.\n\nThis cannot be undone!')) {
+                    return;
+                }
+                
+                $button.prop('disabled', true).text('Clearing...');
+                
+                $.post(ajaxurl, {
+                    action: 'ai_moderator_clear_site_cache',
+                    nonce: '<?php echo wp_create_nonce('ai_comment_moderator_nonce'); ?>',
+                    site_id: siteId
+                }, function(response) {
+                    if (response.success) {
+                        $status.html('<span style="color: #46b450;">✓ ' + response.data.message + '</span>');
+                        $button.prop('disabled', false).text('Clear Comment Cache');
+                        setTimeout(function() { location.reload(); }, 2000);
+                    } else {
+                        $status.html('<span style="color: #dc3232;">✗ ' + response.data + '</span>');
+                        $button.prop('disabled', false).text('Clear Comment Cache');
+                    }
+                }).fail(function() {
+                    $status.html('<span style="color: #dc3232;">✗ Network error</span>');
+                    $button.prop('disabled', false).text('Clear Comment Cache');
+                });
+            });
+        });
+        </script>
+    </div>
+    <?php
 }
 
 function ai_moderator_sync_remote_site($site_id) {
@@ -706,6 +943,51 @@ function ai_moderator_sync_remote_site($site_id) {
     // Redirect to main page to prevent headers already sent error
     wp_safe_redirect(admin_url('admin.php?page=ai-comment-moderator-remote'));
     exit;
+}
+
+// AJAX handler for clearing site cache
+add_action('wp_ajax_ai_moderator_clear_site_cache', 'ai_moderator_ajax_clear_site_cache');
+function ai_moderator_ajax_clear_site_cache() {
+    check_ajax_referer('ai_comment_moderator_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Insufficient permissions');
+    }
+    
+    $site_id = isset($_POST['site_id']) ? intval($_POST['site_id']) : 0;
+    
+    if (!$site_id) {
+        wp_send_json_error('Invalid site ID');
+    }
+    
+    global $wpdb;
+    
+    // Count comments before deleting
+    $count = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM {$wpdb->prefix}ai_remote_comments WHERE site_id = %d",
+        $site_id
+    ));
+    
+    // Delete all cached comments for this site
+    $deleted = $wpdb->delete(
+        $wpdb->prefix . 'ai_remote_comments',
+        array('site_id' => $site_id),
+        array('%d')
+    );
+    
+    // Also reset pagination
+    delete_option("ai_moderator_last_sync_page_site_{$site_id}");
+    
+    // Update site stats
+    AI_Comment_Moderator_Remote_Site_Manager::update_site_stats($site_id);
+    
+    if ($deleted !== false) {
+        wp_send_json_success(array(
+            'message' => "Cleared {$count} cached comment(s). Pagination reset to page 1."
+        ));
+    } else {
+        wp_send_json_error('Failed to clear cache');
+    }
 }
 
 // AJAX handler for resetting sync pagination
@@ -750,13 +1032,15 @@ function ai_moderator_ajax_sync_remote_site() {
     $last_page = get_option("ai_moderator_last_sync_page_site_{$site_id}", 0);
     $start_page = $last_page + 1; // Start from next page
     
-    // Fetch more comments - up to 500 in batches
+    // Get sync batch size from settings (default 10 pages = 1000 comments)
+    $pages_to_fetch = get_option('ai_comment_moderator_sync_pages_per_batch', 10);
+    
+    // Fetch more comments
     $total_fetched = 0;
     $total_stored = 0;
     $total_updated = 0;
     $total_available = null;
     $total_pages_available = null;
-    $pages_to_fetch = 5; // Fetch 5 pages of 100 = 500 comments max
     $end_page = $start_page + $pages_to_fetch - 1;
     
     for ($page = $start_page; $page <= $end_page; $page++) {
