@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AI Comment Moderator
  * Description: AI-powered comment moderation using Ollama with configurable prompts, batch processing, and multi-site management
- * Version: 1.0.4
+ * Version: 1.0.5
  * Author: CSE
  */
 
@@ -11,7 +11,7 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('AI_COMMENT_MODERATOR_VERSION', '1.0.4');
+define('AI_COMMENT_MODERATOR_VERSION', '1.0.5');
 define('AI_COMMENT_MODERATOR_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AI_COMMENT_MODERATOR_PLUGIN_URL', plugin_dir_url(__FILE__));
 

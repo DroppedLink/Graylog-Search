@@ -5,6 +5,24 @@ All notable changes to AI Comment Moderator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2025-01-13
+
+### Fixed
+- **Clear cache network error**: Added comprehensive error logging and improved AJAX error handling
+- Better error messages show HTTP status codes and detailed error information
+- Console logging for debugging "Clear Comment Cache" issues
+
+### Improved  
+- AJAX requests now use `$.ajax()` instead of `$.post()` for better error handling
+- Error responses include detailed diagnostics (XHR status, response text, error details)
+- Server-side logging added to `wp-content/debug.log` (if `WP_DEBUG_LOG` enabled)
+- Clear status messages during operations ("Clearing cache...")
+
+### Technical
+- Added try/catch wrapper around clear cache AJAX handler
+- Added `error_log()` statements at each step of cache clearing process
+- Enhanced JavaScript error handler to log full XHR object for debugging
+
 ## [1.0.4] - 2025-01-13
 
 ### Added

@@ -913,23 +913,35 @@ function ai_moderator_edit_remote_site_page($site_id) {
                 }
                 
                 $button.prop('disabled', true).text('Clearing...');
+                $status.html('<span style="color: #999;">Clearing cache...</span>');
                 
-                $.post(ajaxurl, {
-                    action: 'ai_moderator_clear_site_cache',
-                    nonce: '<?php echo wp_create_nonce('ai_comment_moderator_nonce'); ?>',
-                    site_id: siteId
-                }, function(response) {
-                    if (response.success) {
-                        $status.html('<span style="color: #46b450;">✓ ' + response.data.message + '</span>');
-                        $button.prop('disabled', false).text('Clear Comment Cache');
-                        setTimeout(function() { location.reload(); }, 2000);
-                    } else {
-                        $status.html('<span style="color: #dc3232;">✗ ' + response.data + '</span>');
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'ai_moderator_clear_site_cache',
+                        nonce: '<?php echo wp_create_nonce('ai_comment_moderator_nonce'); ?>',
+                        site_id: siteId
+                    },
+                    success: function(response) {
+                        console.log('Clear cache response:', response);
+                        if (response.success) {
+                            $status.html('<span style="color: #46b450;">✓ ' + response.data.message + '</span>');
+                            $button.prop('disabled', false).text('Clear Comment Cache');
+                            setTimeout(function() { location.reload(); }, 2000);
+                        } else {
+                            var errorMsg = response.data || 'Unknown error';
+                            $status.html('<span style="color: #dc3232;">✗ ' + errorMsg + '</span>');
+                            $button.prop('disabled', false).text('Clear Comment Cache');
+                            console.error('Clear cache error:', errorMsg);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX error:', {xhr: xhr, status: status, error: error, responseText: xhr.responseText});
+                        var errorDetail = xhr.status ? ' (HTTP ' + xhr.status + ')' : '';
+                        $status.html('<span style="color: #dc3232;">✗ Network error' + errorDetail + '</span>');
                         $button.prop('disabled', false).text('Clear Comment Cache');
                     }
-                }).fail(function() {
-                    $status.html('<span style="color: #dc3232;">✗ Network error</span>');
-                    $button.prop('disabled', false).text('Clear Comment Cache');
                 });
             });
         });
@@ -948,45 +960,60 @@ function ai_moderator_sync_remote_site($site_id) {
 // AJAX handler for clearing site cache
 add_action('wp_ajax_ai_moderator_clear_site_cache', 'ai_moderator_ajax_clear_site_cache');
 function ai_moderator_ajax_clear_site_cache() {
-    check_ajax_referer('ai_comment_moderator_nonce', 'nonce');
+    // Error logging for debugging
+    error_log('AI Moderator: Clear cache AJAX called');
     
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Insufficient permissions');
-    }
-    
-    $site_id = isset($_POST['site_id']) ? intval($_POST['site_id']) : 0;
-    
-    if (!$site_id) {
-        wp_send_json_error('Invalid site ID');
-    }
-    
-    global $wpdb;
-    
-    // Count comments before deleting
-    $count = $wpdb->get_var($wpdb->prepare(
-        "SELECT COUNT(*) FROM {$wpdb->prefix}ai_remote_comments WHERE site_id = %d",
-        $site_id
-    ));
-    
-    // Delete all cached comments for this site
-    $deleted = $wpdb->delete(
-        $wpdb->prefix . 'ai_remote_comments',
-        array('site_id' => $site_id),
-        array('%d')
-    );
-    
-    // Also reset pagination
-    delete_option("ai_moderator_last_sync_page_site_{$site_id}");
-    
-    // Update site stats
-    AI_Comment_Moderator_Remote_Site_Manager::update_site_stats($site_id);
-    
-    if ($deleted !== false) {
-        wp_send_json_success(array(
-            'message' => "Cleared {$count} cached comment(s). Pagination reset to page 1."
+    try {
+        check_ajax_referer('ai_comment_moderator_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            error_log('AI Moderator: Clear cache - insufficient permissions');
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        $site_id = isset($_POST['site_id']) ? intval($_POST['site_id']) : 0;
+        error_log('AI Moderator: Clear cache - site_id = ' . $site_id);
+        
+        if (!$site_id) {
+            error_log('AI Moderator: Clear cache - invalid site ID');
+            wp_send_json_error('Invalid site ID');
+        }
+        
+        global $wpdb;
+        
+        // Count comments before deleting
+        $count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}ai_remote_comments WHERE site_id = %d",
+            $site_id
         ));
-    } else {
-        wp_send_json_error('Failed to clear cache');
+        error_log('AI Moderator: Clear cache - found ' . $count . ' comments to delete');
+        
+        // Delete all cached comments for this site
+        $deleted = $wpdb->delete(
+            $wpdb->prefix . 'ai_remote_comments',
+            array('site_id' => $site_id),
+            array('%d')
+        );
+        error_log('AI Moderator: Clear cache - delete result = ' . var_export($deleted, true));
+        
+        // Also reset pagination
+        delete_option("ai_moderator_last_sync_page_site_{$site_id}");
+        
+        // Update site stats
+        AI_Comment_Moderator_Remote_Site_Manager::update_site_stats($site_id);
+        
+        if ($deleted !== false) {
+            error_log('AI Moderator: Clear cache - success');
+            wp_send_json_success(array(
+                'message' => "Cleared {$count} cached comment(s). Pagination reset to page 1."
+            ));
+        } else {
+            error_log('AI Moderator: Clear cache - delete failed');
+            wp_send_json_error('Failed to clear cache');
+        }
+    } catch (Exception $e) {
+        error_log('AI Moderator: Clear cache - exception: ' . $e->getMessage());
+        wp_send_json_error('Exception: ' . $e->getMessage());
     }
 }
 
