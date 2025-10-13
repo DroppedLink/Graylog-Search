@@ -2,6 +2,19 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.5.4] - 2025-10-13
+
+### Fixed
+- **Update Cache Bug**: Fixed issue where update notification persisted after updating plugin
+  - Settings page now automatically detects and clears stale update cache
+  - Checks if "new version" is actually older/same as current version
+  - Clears WordPress transients and re-checks when stale cache detected
+  - No more false "update available" notifications after updating
+
+### Changed
+- Added automatic cache clearing logic in settings page
+- Improved update status detection reliability
+
 ## [1.5.3] - 2025-10-13
 
 ### Fixed

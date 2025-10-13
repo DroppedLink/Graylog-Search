@@ -50,6 +50,17 @@ function graylog_search_settings_page() {
     
     // Get update status
     $update_status = Graylog_Search_GitHub_Updater::get_update_status();
+    
+    // Clear cache if showing false update notification (version is same or older)
+    if ($update_status['update_available'] && isset($update_status['new_version'])) {
+        if (version_compare(GRAYLOG_SEARCH_VERSION, $update_status['new_version'], '>=')) {
+            // Current version is same or newer than "new version" - cache is stale
+            delete_transient('graylog_search_github_release');
+            delete_site_transient('update_plugins');
+            // Re-fetch update status after clearing cache
+            $update_status = Graylog_Search_GitHub_Updater::get_update_status();
+        }
+    }
     ?>
     <div class="wrap">
         <h1>Graylog Search Settings</h1>
