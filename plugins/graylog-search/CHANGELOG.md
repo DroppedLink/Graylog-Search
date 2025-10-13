@@ -2,6 +2,18 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.5.2] - 2025-10-13
+
+### Added
+- **Wildcard Search**: Hostname searches now automatically include wildcards for partial matching
+  - Searching "server01" will match "server01.example.com", "server01.stage.charter.com", etc.
+  - Searching "nebula-worker" will match "cdptpabb04-caas-nebula-worker-5.stage.charter.com"
+  - Users can still specify their own wildcards with `*` or `?` if needed
+
+### Changed
+- Query builder now wraps hostname searches with `*` wildcards: `fqdn:hostname` → `fqdn:*hostname*`
+- Wildcards are only added if the user hasn't already specified them
+
 ## [1.5.1] - 2025-10-13
 
 ### Changed
