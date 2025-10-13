@@ -149,6 +149,71 @@ function graylog_search_settings_page() {
         
         <hr>
         
+        <h2>Shortcode Usage</h2>
+        <div class="shortcode-info" style="background: #f0f0f1; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+            <p><strong>Add the search interface to any page or post:</strong></p>
+            
+            <div style="background: white; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #2271b1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <code style="font-size: 16px; font-weight: bold;">[graylog_search]</code>
+                    <button type="button" class="button button-secondary" onclick="copyShortcode('[graylog_search]')">
+                        <span class="dashicons dashicons-clipboard" style="vertical-align: middle;"></span> Copy
+                    </button>
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 20px;">Optional Attributes:</h3>
+            
+            <div style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                <strong>Custom Height:</strong>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                    <code>[graylog_search height="800px"]</code>
+                    <button type="button" class="button button-secondary" onclick="copyShortcode('[graylog_search height=&quot;800px&quot;]')">
+                        <span class="dashicons dashicons-clipboard" style="vertical-align: middle;"></span> Copy
+                    </button>
+                </div>
+                <p class="description" style="margin-top: 10px;">Set custom height for the results container</p>
+            </div>
+            
+            <div style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                <strong>Restrict Access:</strong>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                    <code>[graylog_search capability="edit_posts"]</code>
+                    <button type="button" class="button button-secondary" onclick="copyShortcode('[graylog_search capability=&quot;edit_posts&quot;]')">
+                        <span class="dashicons dashicons-clipboard" style="vertical-align: middle;"></span> Copy
+                    </button>
+                </div>
+                <p class="description" style="margin-top: 10px;">Limit access by WordPress capability</p>
+            </div>
+            
+            <p style="margin-top: 15px;">
+                <strong>💡 Tip:</strong> Copy any shortcode above and paste it into a page or post editor.
+            </p>
+        </div>
+        
+        <script>
+        function copyShortcode(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                // Show success message
+                var msg = document.createElement('div');
+                msg.className = 'notice notice-success is-dismissible';
+                msg.style.position = 'fixed';
+                msg.style.top = '32px';
+                msg.style.right = '20px';
+                msg.style.zIndex = '999999';
+                msg.innerHTML = '<p><strong>Copied!</strong> Shortcode copied to clipboard.</p>';
+                document.body.appendChild(msg);
+                setTimeout(function() {
+                    msg.remove();
+                }, 3000);
+            }, function(err) {
+                alert('Failed to copy: ' + err);
+            });
+        }
+        </script>
+        
+        <hr>
+        
         <h2>Plugin Updates</h2>
         <div class="update-checker" style="background: #f0f0f1; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
             <p><strong>Current Version:</strong> <?php echo esc_html($update_status['current_version']); ?></p>

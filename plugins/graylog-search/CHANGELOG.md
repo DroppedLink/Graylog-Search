@@ -2,6 +2,20 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.5.5] - 2025-10-13
+
+### Added
+- **Shortcode Display**: Added prominent shortcode section in Settings page
+  - Shows `[graylog_search]` shortcode with copy button
+  - Displays optional attributes (height, capability)
+  - One-click copy to clipboard for all shortcode variations
+  - Visual examples with descriptions
+  - Makes it easy to find and use shortcodes on pages/posts
+
+### Changed
+- Settings page now includes "Shortcode Usage" section before "Plugin Updates"
+- Improved UX for embedding search interface on pages
+
 ## [1.5.4] - 2025-10-13
 
 ### Fixed
