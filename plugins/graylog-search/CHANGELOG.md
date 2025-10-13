@@ -2,6 +2,20 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.6.1] - 2025-10-13
+
+### Added
+- **Filter Display for All Actions**: "Keep Only" and "Highlight" actions now show in the active filters display
+  - Color-coded badges: Red for "Filter Out", Green for "Keep Only", Yellow for "Highlight"
+  - Icons for each filter type (dismiss, visibility, art)
+  - Individual remove buttons for each filter/highlight
+  - "Clear All" button removes all filters, keep-only filters, and highlights
+
+### Fixed
+- "Keep Only" filters now appear in the active filters display with remove capability
+- "Highlight" actions now appear in the active filters display with remove capability
+- Improved filter management UI with visual distinction between filter types
+
 ## [1.6.0] - 2025-10-13
 
 ### Added

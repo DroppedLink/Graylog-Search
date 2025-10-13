@@ -429,10 +429,31 @@ textarea.graylog-input {
     gap: 8px;
 }
 
+.filter-section {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.filter-section:last-of-type {
+    margin-bottom: 0;
+}
+
 .filters-label {
     font-weight: 600;
     color: #333;
     font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.filters-label .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
 }
 
 .filter-badge {
@@ -448,9 +469,23 @@ textarea.graylog-input {
     transition: all 0.2s;
 }
 
+.filter-out-badge {
+    border-color: #dc3545;
+    background: #fff5f5;
+}
+
+.keep-only-badge {
+    border-color: #28a745;
+    background: #f0fff4;
+}
+
+.highlight-badge {
+    border-color: #ffc107;
+    background: #fffbea;
+}
+
 .filter-badge:hover {
-    border-color: #0073aa;
-    box-shadow: 0 2px 4px rgba(0,115,170,0.2);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .filter-badge .remove-filter {
@@ -487,7 +522,8 @@ textarea.graylog-input {
 }
 
 /* Filtered out rows */
-.filtered-out {
+.filtered-out,
+.keep-only-hidden {
     display: none !important;
 }
 

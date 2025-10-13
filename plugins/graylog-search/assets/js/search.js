@@ -1,6 +1,8 @@
 jQuery(document).ready(function($) {
     // Active client-side filters
     var activeFilters = [];
+    var keepOnlyFilters = [];
+    var activeHighlights = [];
     
     // DNS lookup cache
     var dnsCache = {};
@@ -405,32 +407,82 @@ jQuery(document).ready(function($) {
         applyFilters();
     }
     
+    // Clear all keep-only filters
+    function clearAllKeepOnlyFilters() {
+        keepOnlyFilters = [];
+        updateFilterDisplay();
+        applyKeepOnlyFilters();
+    }
+    
+    // Clear all highlights
+    function clearAllHighlights() {
+        activeHighlights.forEach(function(highlight) {
+            $('.graylog-results-table .highlight-mark[data-highlight="' + escapeHtml(highlight) + '"]').each(function() {
+                var $this = $(this);
+                $this.replaceWith($this.html());
+            });
+        });
+        activeHighlights = [];
+        updateFilterDisplay();
+    }
+    
     // Keep only rows containing text
     function addKeepOnlyFilter(text) {
-        // Hide all rows that DON'T contain the text
-        $('.graylog-results-table tbody tr').each(function() {
-            var $row = $(this);
-            var rowText = $row.text().toLowerCase();
-            var searchText = text.toLowerCase();
-            
-            if (rowText.indexOf(searchText) === -1) {
-                $row.addClass('filtered-out');
-            } else {
-                $row.removeClass('filtered-out');
-            }
-        });
+        if (keepOnlyFilters.indexOf(text) === -1) {
+            keepOnlyFilters.push(text);
+            updateFilterDisplay();
+            applyKeepOnlyFilters();
+        }
+    }
+    
+    // Apply keep-only filters
+    function applyKeepOnlyFilters() {
+        if (keepOnlyFilters.length === 0) {
+            // If no keep-only filters, show all rows (unless filtered out)
+            $('.graylog-results-table tbody tr').each(function() {
+                $(this).removeClass('keep-only-hidden');
+            });
+        } else {
+            // Hide rows that don't match ANY keep-only filter
+            $('.graylog-results-table tbody tr').each(function() {
+                var $row = $(this);
+                var rowText = $row.text().toLowerCase();
+                var matches = false;
+                
+                for (var i = 0; i < keepOnlyFilters.length; i++) {
+                    if (rowText.indexOf(keepOnlyFilters[i].toLowerCase()) !== -1) {
+                        matches = true;
+                        break;
+                    }
+                }
+                
+                if (!matches) {
+                    $row.addClass('keep-only-hidden');
+                } else {
+                    $row.removeClass('keep-only-hidden');
+                }
+            });
+        }
         
         updateResultCount();
-        showNotification('Showing only rows containing: "' + text + '"', 'info');
+    }
+    
+    // Remove keep-only filter
+    function removeKeepOnlyFilter(filterText) {
+        var index = keepOnlyFilters.indexOf(filterText);
+        if (index > -1) {
+            keepOnlyFilters.splice(index, 1);
+            updateFilterDisplay();
+            applyKeepOnlyFilters();
+        }
     }
     
     // Highlight all occurrences of text
     function highlightText(text) {
-        // Remove existing highlights for this text first
-        $('.graylog-results-table .highlight-mark[data-highlight="' + escapeHtml(text) + '"]').each(function() {
-            var $this = $(this);
-            $this.replaceWith($this.html());
-        });
+        if (activeHighlights.indexOf(text) === -1) {
+            activeHighlights.push(text);
+            updateFilterDisplay();
+        }
         
         // Add new highlights
         $('.graylog-results-table tbody tr').each(function() {
@@ -444,8 +496,21 @@ jQuery(document).ready(function($) {
                 $td.html(newHtml);
             });
         });
-        
-        showNotification('Highlighted: "' + text + '"', 'success');
+    }
+    
+    // Remove highlight
+    function removeHighlight(text) {
+        var index = activeHighlights.indexOf(text);
+        if (index > -1) {
+            activeHighlights.splice(index, 1);
+            updateFilterDisplay();
+            
+            // Remove highlight marks
+            $('.graylog-results-table .highlight-mark[data-highlight="' + escapeHtml(text) + '"]').each(function() {
+                var $this = $(this);
+                $this.replaceWith($this.html());
+            });
+        }
     }
     
     // Copy text to clipboard
@@ -483,21 +548,57 @@ jQuery(document).ready(function($) {
     function updateFilterDisplay() {
         var $container = $('.active-filters-container');
         
-        if (activeFilters.length === 0) {
+        if (activeFilters.length === 0 && keepOnlyFilters.length === 0 && activeHighlights.length === 0) {
             $container.hide();
             return;
         }
         
         var html = '<div class="active-filters">';
-        html += '<span class="filters-label">Filtering out:</span> ';
         
-        activeFilters.forEach(function(filter) {
-            var truncated = filter.length > 30 ? filter.substring(0, 30) + '...' : filter;
-            html += '<span class="filter-badge" data-filter="' + escapeHtml(filter) + '">';
-            html += escapeHtml(truncated);
-            html += ' <button class="remove-filter" title="Remove filter">×</button>';
-            html += '</span> ';
-        });
+        // Filter Out section
+        if (activeFilters.length > 0) {
+            html += '<div class="filter-section">';
+            html += '<span class="filters-label"><span class="dashicons dashicons-dismiss"></span> Filtering out:</span> ';
+            
+            activeFilters.forEach(function(filter) {
+                var truncated = filter.length > 30 ? filter.substring(0, 30) + '...' : filter;
+                html += '<span class="filter-badge filter-out-badge" data-filter="' + escapeHtml(filter) + '" data-type="filterout">';
+                html += escapeHtml(truncated);
+                html += ' <button class="remove-filter" title="Remove filter">×</button>';
+                html += '</span> ';
+            });
+            html += '</div>';
+        }
+        
+        // Keep Only section
+        if (keepOnlyFilters.length > 0) {
+            html += '<div class="filter-section">';
+            html += '<span class="filters-label"><span class="dashicons dashicons-visibility"></span> Keeping only:</span> ';
+            
+            keepOnlyFilters.forEach(function(filter) {
+                var truncated = filter.length > 30 ? filter.substring(0, 30) + '...' : filter;
+                html += '<span class="filter-badge keep-only-badge" data-filter="' + escapeHtml(filter) + '" data-type="keeponly">';
+                html += escapeHtml(truncated);
+                html += ' <button class="remove-filter" title="Remove filter">×</button>';
+                html += '</span> ';
+            });
+            html += '</div>';
+        }
+        
+        // Highlights section
+        if (activeHighlights.length > 0) {
+            html += '<div class="filter-section">';
+            html += '<span class="filters-label"><span class="dashicons dashicons-art"></span> Highlighted:</span> ';
+            
+            activeHighlights.forEach(function(highlight) {
+                var truncated = highlight.length > 30 ? highlight.substring(0, 30) + '...' : highlight;
+                html += '<span class="filter-badge highlight-badge" data-filter="' + escapeHtml(highlight) + '" data-type="highlight">';
+                html += escapeHtml(truncated);
+                html += ' <button class="remove-filter" title="Remove highlight">×</button>';
+                html += '</span> ';
+            });
+            html += '</div>';
+        }
         
         html += '<button class="clear-all-filters">Clear All</button>';
         html += '</div>';
@@ -508,13 +609,24 @@ jQuery(document).ready(function($) {
     // Handle remove filter click
     $(document).on('click', '.remove-filter', function(e) {
         e.stopPropagation();
-        var filterText = $(this).closest('.filter-badge').data('filter');
-        removeFilter(filterText);
+        var $badge = $(this).closest('.filter-badge');
+        var filterText = $badge.data('filter');
+        var filterType = $badge.data('type');
+        
+        if (filterType === 'filterout') {
+            removeFilter(filterText);
+        } else if (filterType === 'keeponly') {
+            removeKeepOnlyFilter(filterText);
+        } else if (filterType === 'highlight') {
+            removeHighlight(filterText);
+        }
     });
     
     // Handle clear all filters click
     $(document).on('click', '.clear-all-filters', function() {
         clearAllFilters();
+        clearAllKeepOnlyFilters();
+        clearAllHighlights();
     });
     
     // Apply filters to rows
