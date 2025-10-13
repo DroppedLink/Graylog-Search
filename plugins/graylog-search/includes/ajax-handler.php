@@ -61,11 +61,12 @@ function graylog_search_logs_handler() {
 function graylog_build_query($fqdn, $search_terms, $filter_out) {
     $query_parts = array();
     
-    // Add hostname/FQDN search (searches the fqdn field with wildcards)
+    // Add hostname/FQDN search (searches the fqdn field with trailing wildcard)
     if (!empty($fqdn)) {
-        // Add wildcards for partial matching unless user already specified them
+        // Add trailing wildcard for partial matching unless user already specified wildcards
+        // Only trailing wildcard to avoid expensive leading wildcard searches
         if (strpos($fqdn, '*') === false && strpos($fqdn, '?') === false) {
-            $fqdn = '*' . $fqdn . '*';
+            $fqdn = $fqdn . '*';
         }
         
         // Only add quotes if the value contains spaces or special characters (rare for hostnames)

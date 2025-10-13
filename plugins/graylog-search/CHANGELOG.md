@@ -2,17 +2,28 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
-## [1.5.2] - 2025-10-13
+## [1.5.3] - 2025-10-13
+
+### Fixed
+- **Wildcard Search**: Changed to trailing-only wildcard to fix Graylog compatibility
+  - Now uses `hostname*` instead of `*hostname*`
+  - Trailing wildcards are faster and widely supported in Graylog/Lucene
+  - Avoids expensive leading wildcard searches that may be disabled
+  - Searching "server01" now generates `fqdn:server01*` (matches `server01.example.com`)
+
+### Changed
+- Query builder updated: `fqdn:hostname` → `fqdn:hostname*` (trailing wildcard only)
+- Removes leading wildcard to improve performance and compatibility
+
+## [1.5.2] - 2025-10-13 (Deprecated - Use 1.5.3)
 
 ### Added
 - **Wildcard Search**: Hostname searches now automatically include wildcards for partial matching
-  - Searching "server01" will match "server01.example.com", "server01.stage.charter.com", etc.
-  - Searching "nebula-worker" will match "cdptpabb04-caas-nebula-worker-5.stage.charter.com"
-  - Users can still specify their own wildcards with `*` or `?` if needed
+  - ⚠️ Used both leading and trailing wildcards which caused issues in some Graylog configurations
 
 ### Changed
-- Query builder now wraps hostname searches with `*` wildcards: `fqdn:hostname` → `fqdn:*hostname*`
-- Wildcards are only added if the user hasn't already specified them
+- Query builder wraps hostname searches with `*` wildcards: `fqdn:hostname` → `fqdn:*hostname*`
+- ⚠️ Leading wildcards can be slow or disabled - use v1.5.3 instead
 
 ## [1.5.1] - 2025-10-13
 
