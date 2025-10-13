@@ -1,302 +1,191 @@
-# WordPress Plugin Development Environment
+# Graylog Search WordPress Plugin
 
-A Docker-based WordPress development environment for creating and testing WordPress plugins locally.
+A powerful WordPress plugin that provides a user-friendly interface for searching and analyzing Graylog logs via API.
 
-## Quick Start
+## Features
 
-### Prerequisites
+### 🔍 Search & Filter
+- **Simple Search Interface**: Search by FQDN, additional terms, and time range (hour/day/week)
+- **Interactive Filtering**: Highlight text in results to instantly filter it out
+- **Active Filters Display**: See and manage all active filters with one-click removal
 
-- Docker Desktop installed on your Mac
-- Basic knowledge of WordPress plugin development
+### 🌐 IP Enrichment
+- **Automatic IP Detection**: IPs are automatically detected and highlighted in results
+- **DNS Lookups**: Click any IP to perform a reverse DNS lookup
+- **Batch Resolution**: "Resolve All IPs" button to resolve all visible IPs at once
+- **Visual Feedback**: Color-coded states (resolving/resolved/unresolvable)
 
-### Setup
+### 🕐 Timezone Conversion
+- **Smart Timezone Selector**: Automatically detects your timezone
+- **Toggle View**: Switch between original and converted timestamps
+- **Message Timestamp Detection**: Converts timestamps within log messages too
 
-1. **Run the setup script (first time only):**
-   ```bash
-   ./setup.sh
-   ```
-   This creates the `.env` configuration file and prepares directories.
+### 🔄 Auto-Refresh
+- **Configurable Intervals**: Auto-refresh search results every 15s, 30s, 60s, or 5min
+- **Manual Toggle**: Enable/disable with a single click
 
-2. **Start the environment:**
-   ```bash
-   docker compose up -d
-   ```
+### 📊 Data Export
+- **Multiple Formats**: Export visible results as CSV, JSON, or plain text
+- **Copy to Clipboard**: Quick copy of visible rows
+- **Filtered Exports**: Only exports what you see (respects active filters)
 
-3. **Wait 30 seconds** for WordPress and MySQL to initialize (first time only)
+### 🛠 Row Actions
+- **Include/Exclude Filters**: Right-click menu to filter by source
+- **Copy Row**: Copy individual log entries
+- **Expand Details**: View full log details with parsed fields
 
-4. **Access WordPress:**
-   - WordPress Site: http://localhost:8080
-   - phpMyAdmin: http://localhost:8081
-   
-5. **Complete WordPress installation:**
-   - Open http://localhost:8080 in your browser
-   - Follow the WordPress installation wizard
-   - Choose your site title, username, and password
+### 🔬 Log Parsing
+- **Format Detection**: Automatically parse JSON, key=value, CEF, and LEEF formats
+- **Field Extraction**: View parsed fields in organized tables
+- **Toggle Parsing**: Enable/disable with a checkbox
 
-6. **Start developing:**
-   - Your plugins go in the `plugins/` directory
-   - Changes are instantly reflected in WordPress
-   - Navigate to Plugins → Installed Plugins → Custom Plugins folder
+### 📄 WordPress Integration
+- **Admin Page**: Full-featured search interface in WordPress admin
+- **Shortcode**: Embed search interface anywhere with `[graylog_search]`
+- **Permissions**: Respects WordPress capabilities
 
-### Stop the environment
+## Installation
 
-```bash
-docker compose down
-```
-
-### Stop and remove all data (fresh start)
-
-```bash
-docker compose down -v
-```
-
-## Plugin Development Workflow
-
-### 1. Create a New Plugin
-
-**Easy Way (Recommended):**
-
-```bash
-./scripts/add-plugin.sh my-awesome-plugin
-```
-
-This script will:
-- Create the plugin directory
-- Generate the main plugin file with proper headers
-- The plugin appears **instantly** in WordPress (no restart needed!)
-
-**Manual Way:**
-
-Create a new folder in the `plugins/` directory:
-
-```bash
-mkdir plugins/my-awesome-plugin
-```
-
-Create the main plugin file with the required header:
-
-```php
-<?php
-/**
- * Plugin Name: My Awesome Plugin
- * Plugin URI: https://example.com/my-awesome-plugin
- * Description: Description of what your plugin does
- * Version: 1.0.0
- * Author: Your Name
- * Author URI: https://example.com
- * License: GPL v2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: my-awesome-plugin
- */
-
-// Your plugin code here
-```
-
-The plugin will appear **instantly** in WordPress - just refresh the Plugins page!
-
-### 2. Develop Your Plugin
-
-- Edit files directly in `plugins/your-plugin-name/`
-- Changes appear **immediately** in WordPress (just refresh your browser)
-- New plugins appear **instantly** (no restart needed!)
-- Check WordPress Admin → Plugins → Installed Plugins to activate your plugin
-
-### 3. Package Your Plugin
-
-When ready to create a .zip file for distribution:
-
-```bash
-./scripts/zip-plugin.sh my-awesome-plugin
-```
-
-The .zip file will be created in the `dist/` directory and is ready to upload to any WordPress site.
-
-## Directory Structure
-
-```
-wordpress/
-├── docker-compose.yml          # Docker services configuration
-├── .env                        # Environment variables (ports, passwords)
-├── .gitignore                  # Git ignore rules
-├── README.md                   # This file
-├── plugins/                    # Your custom plugins
-│   ├── example-plugin/         # Example plugin template
-│   │   ├── example-plugin.php  # Main plugin file
-│   │   └── readme.txt          # Plugin readme
-│   ├── graylog-search/         # Graylog log search interface
-│   └── web-embed/              # URL embedding with security & caching
-├── scripts/                    # Utility scripts
-│   ├── add-plugin.sh          # Create and register a new plugin
-│   └── zip-plugin.sh          # Package plugin as .zip
-└── dist/                       # Generated .zip files (created automatically)
-```
+1. Download `graylog-search.zip` from the releases
+2. Go to WordPress Admin → Plugins → Add New
+3. Click "Upload Plugin"
+4. Choose the `graylog-search.zip` file
+5. Click "Install Now" and then "Activate"
 
 ## Configuration
 
-All configuration is in the `.env` file:
+1. Go to **Settings → Graylog Search** in WordPress admin
+2. Enter your Graylog API URL (e.g., `http://logs.example.com:9000`)
+   - The plugin automatically adds `/api` to the URL
+3. Enter your Graylog API Token
+4. Save settings
 
-- **WORDPRESS_PORT**: WordPress site port (default: 8080)
-- **PHPMYADMIN_PORT**: phpMyAdmin port (default: 8081)
-- **MYSQL_ROOT_PASSWORD**: MySQL root password
-- **MYSQL_DATABASE**: WordPress database name
-- **MYSQL_USER**: WordPress database user
-- **MYSQL_PASSWORD**: WordPress database password
+### Creating a Graylog API Token
 
-You can change any of these values and restart the containers:
+1. Log into your Graylog web interface
+2. Go to **System → Users** → Select your user
+3. Click "Edit tokens"
+4. Create a new token with appropriate permissions
+5. Copy the token to WordPress settings
 
-```bash
-docker compose down
-docker compose up -d
-```
+## Usage
 
-## Common Commands
+### Admin Interface
+Navigate to **Graylog → Search Logs** in the WordPress admin menu.
 
-### View logs
-```bash
-docker compose logs -f wordpress
-```
-
-### Access WordPress container shell
-```bash
-docker compose exec wordpress bash
-```
-
-### Access MySQL database
-```bash
-docker compose exec db mysql -u wordpress -pwordpress wordpress
-```
-
-### Restart services
-```bash
-docker compose restart
-```
-
-## Available Plugins
-
-### Web Embed
-A modern plugin for embedding external URLs into pages using shortcodes with object/embed tags.
-
-**Features:**
-- Modern object/embed tag rendering (better than iframes)
-- Security controls: whitelist domains, enforce HTTPS
-- Built-in caching for performance
-- Responsive design support
-- Customizable styling (borders, dimensions, CSS classes)
-- Fallback support for blocked content
-
-**Usage:**
-```
-[web_embed url="https://example.com" width="100%" height="600px" responsive="true"]
-```
-
-See `plugins/web-embed/README.md` for full documentation.
-
-### Graylog Search
-Simple interface for non-technical users to search Graylog logs via API.
-
-**Package a plugin:**
-```bash
-./scripts/zip-plugin.sh web-embed
-# or
-./scripts/zip-plugin.sh graylog-search
-```
-
-## Plugin Development Tips
-
-### WordPress Plugin File Structure
-
-A typical plugin structure:
+### Shortcode
+Embed the search interface on any page or post:
 
 ```
-my-plugin/
-├── my-plugin.php           # Main plugin file (required)
-├── readme.txt              # Plugin readme for WordPress.org
-├── uninstall.php           # Cleanup code when plugin is deleted
-├── includes/               # PHP classes and functions
-│   ├── class-main.php
-│   └── functions.php
-├── admin/                  # Admin-specific functionality
-│   ├── class-admin.php
-│   └── css/
-├── public/                 # Public-facing functionality
-│   ├── class-public.php
-│   ├── css/
-│   └── js/
-└── languages/              # Translation files
+[graylog_search]
 ```
 
-### Useful WordPress Hooks
+Optional attributes:
+- `height`: Set custom height (default: 600px)
+  ```
+  [graylog_search height="800px"]
+  ```
 
-```php
-// Run on plugin activation
-register_activation_hook(__FILE__, 'my_plugin_activate');
+- `capability`: Restrict access by capability (default: read)
+  ```
+  [graylog_search capability="edit_posts"]
+  ```
 
-// Run on plugin deactivation
-register_deactivation_hook(__FILE__, 'my_plugin_deactivate');
+## Graylog Compatibility
 
-// Initialize your plugin
-add_action('init', 'my_plugin_init');
+- **Graylog 6.1+**: Fully supported (uses `/api/search/messages` endpoint)
+- **Graylog 5.x**: May work with older endpoint (not tested)
 
-// Add admin menu
-add_action('admin_menu', 'my_plugin_menu');
+The plugin automatically handles Graylog 6.1's new API format with schema/datarows.
 
-// Enqueue scripts and styles
-add_action('wp_enqueue_scripts', 'my_plugin_enqueue_scripts');
+## Requirements
+
+- WordPress 5.0 or higher
+- PHP 7.2 or higher
+- Graylog 6.1+ with API access
+- Valid Graylog API token
+
+## Development
+
+### Building from Source
+
+The plugin is located in `plugins/graylog-search/` directory.
+
+No build process required - it's pure PHP/JavaScript/CSS.
+
+### File Structure
+
+```
+plugins/graylog-search/
+├── graylog-search.php           # Main plugin file
+├── includes/
+│   ├── settings.php             # Settings page
+│   ├── search-page.php          # Admin search interface
+│   ├── shortcode.php            # Shortcode handler
+│   ├── ajax-handler.php         # API communication
+│   ├── dns-lookup.php           # DNS resolution
+│   └── timezone-handler.php     # Timezone preferences
+├── assets/
+│   ├── css/style.css           # Plugin styles
+│   └── js/search.js            # Frontend JavaScript
+└── *.md                        # Documentation
 ```
 
-### Debugging
+## Documentation
 
-WordPress debugging is enabled by default. Check the WordPress debug log:
+- **README.md** (this file): Overview and installation
+- **USAGE_GUIDE.md**: Detailed user guide
+- **SHORTCODE_GUIDE.md**: Shortcode documentation
+- **INTERACTIVE_FILTERING_GUIDE.md**: Filtering feature guide
+- **TIMEZONE_FEATURE.md**: Timezone conversion details
+- **GRAYLOG_6.1_UPDATE.md**: API compatibility notes
 
-```bash
-docker compose exec wordpress tail -f /var/www/html/wp-content/debug.log
-```
+## Version History
 
-## Troubleshooting
+### v1.4.1 (Latest)
+- Added blank lines between entries in text exports
 
-### Port already in use
+### v1.4.0
+- Added CSV/JSON/TXT exports and copy-to-clipboard
+- Added row actions menu (include/exclude/copy/details)
+- Added parse toggle for JSON/KV/CEF/LEEF formats
+- Improved detail drawer with parsed fields
 
-If port 8080 or 8081 is already in use, edit `.env` and change the ports:
+### v1.3.1
+- Changed unresolvable IP color to orange
 
-```
-WORDPRESS_PORT=8090
-PHPMYADMIN_PORT=8091
-```
+### v1.3.0
+- Updated for Graylog 6.1 API compatibility
+- Added required `X-Requested-By` header
+- Implemented response format conversion for new schema
 
-Then restart: `docker compose down && docker compose up -d`
+### v1.2.0
+- Added "Resolve All IPs" batch action
+- Added timezone conversion with user preferences
+- Improved timestamp handling
 
-### Plugin not showing in WordPress
+### v1.1.1
+- Added auto-refresh with configurable intervals
+- Improved DNS lookup error handling
 
-1. Make sure your plugin folder is in `plugins/`
-2. Check that your main PHP file has the proper plugin header
-3. Look in WordPress Admin → Plugins → Custom Plugins folder
-4. Check file permissions: `chmod -R 755 plugins/your-plugin`
+### v1.1.0
+- Added IP address enrichment with DNS lookups
+- Added interactive text filtering
+- Visual feedback for DNS resolution states
 
-### Cannot access WordPress
-
-1. Check if containers are running: `docker compose ps`
-2. Check logs: `docker compose logs wordpress`
-3. Wait a minute after first start (MySQL needs time to initialize)
-
-### Reset everything
-
-To start completely fresh:
-
-```bash
-docker compose down -v
-docker compose up -d
-```
-
-This removes all data including the WordPress installation and database.
-
-## Resources
-
-- [WordPress Plugin Developer Handbook](https://developer.wordpress.org/plugins/)
-- [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/)
-- [Plugin Handbook: Headers](https://developer.wordpress.org/plugins/plugin-basics/header-requirements/)
-- [WordPress Hook Reference](https://developer.wordpress.org/reference/hooks/)
+### v1.0.0
+- Initial release
+- Basic search functionality
+- Admin interface and shortcode support
 
 ## License
 
-This development environment setup is provided as-is for plugin development purposes.
+This plugin is provided as-is for use with Graylog log management systems.
 
+## Support
+
+For issues, questions, or feature requests, please contact the plugin author.
+
+## Credits
+
+Developed for network and server administrators who need quick, powerful log search capabilities without leaving WordPress.
