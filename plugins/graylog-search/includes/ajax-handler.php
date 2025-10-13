@@ -103,11 +103,12 @@ function graylog_parse_multivalue_input($input) {
 
 // Build Graylog search query
 function graylog_build_query($fqdn, $search_terms, $filter_out) {
-    $query_parts = array();
+    $query_groups = array();
     
     // Add hostname/FQDN search (searches the fqdn field with trailing wildcard)
+    // Multiple hostnames are OR'ed together
     if (!empty($fqdn)) {
-        // Parse multiple values: newlines, commas, and spaces
+        $fqdn_parts = array();
         $fqdn_values = graylog_parse_multivalue_input($fqdn);
         
         foreach ($fqdn_values as $fqdn_item) {
@@ -119,39 +120,55 @@ function graylog_build_query($fqdn, $search_terms, $filter_out) {
             
             // Only add quotes if the value contains spaces or special characters (rare for hostnames)
             if (preg_match('/\s/', $fqdn_item)) {
-                $query_parts[] = 'fqdn:"' . $fqdn_item . '"';
+                $fqdn_parts[] = 'fqdn:"' . $fqdn_item . '"';
             } else {
-                $query_parts[] = 'fqdn:' . $fqdn_item;
+                $fqdn_parts[] = 'fqdn:' . $fqdn_item;
             }
+        }
+        
+        // If multiple hostnames, OR them together and wrap in parentheses
+        if (count($fqdn_parts) > 1) {
+            $query_groups[] = '(' . implode(' OR ', $fqdn_parts) . ')';
+        } elseif (count($fqdn_parts) === 1) {
+            $query_groups[] = $fqdn_parts[0];
         }
     }
     
-    // Add additional search terms
+    // Add additional search terms (OR'ed together if multiple)
     if (!empty($search_terms)) {
         $terms = graylog_parse_multivalue_input($search_terms);
+        $term_parts = array();
         foreach ($terms as $term) {
             if (!empty($term)) {
-                $query_parts[] = $term;
+                $term_parts[] = $term;
             }
+        }
+        
+        // If multiple search terms, OR them together and wrap in parentheses
+        if (count($term_parts) > 1) {
+            $query_groups[] = '(' . implode(' OR ', $term_parts) . ')';
+        } elseif (count($term_parts) === 1) {
+            $query_groups[] = $term_parts[0];
         }
     }
     
-    // Add filter out terms (NOT)
+    // Add filter out terms (NOT) - these are AND'ed with NOT prefix
     if (!empty($filter_out)) {
         $filters = graylog_parse_multivalue_input($filter_out);
         foreach ($filters as $filter) {
             if (!empty($filter)) {
-                $query_parts[] = 'NOT ' . $filter;
+                $query_groups[] = 'NOT ' . $filter;
             }
         }
     }
     
     // If no query parts, search for everything
-    if (empty($query_parts)) {
+    if (empty($query_groups)) {
         return '*';
     }
     
-    return implode(' AND ', $query_parts);
+    // AND together the different groups (hostnames, search terms, filters)
+    return implode(' AND ', $query_groups);
 }
 
 // Make Graylog API search request

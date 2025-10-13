@@ -2,6 +2,21 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.6.2] - 2025-10-13
+
+### Changed
+- **"Keep Only" renamed to "Filter In"**: More intuitive terminology for showing only matching rows
+- **Auto-highlight on Filter In**: When using "Filter In", matching text is now automatically highlighted
+- **Search Terms work without Hostname**: You can now search using only Search Terms field (Hostname is optional)
+- **Improved Multi-Value Logic**: 
+  - Multiple hostnames are now OR'ed together (find logs from server01 OR server02)
+  - Multiple search terms are now OR'ed together (find logs with error OR warning)
+  - Different field types are still AND'ed (hostname AND search_terms AND NOT filter_out)
+
+### Fixed
+- Multiple hostname searches now work correctly (OR logic instead of AND)
+- Multiple search term searches now work correctly (OR logic instead of AND)
+
 ## [1.6.1] - 2025-10-13
 
 ### Added
