@@ -20,7 +20,7 @@
 .graylog-search-form-container input[type="text"],
 .graylog-search-form-container select {
     width: 100%;
-    max-width: 500px;
+    max-width: 400px;
 }
 
 /* Compact Shortcode Form */

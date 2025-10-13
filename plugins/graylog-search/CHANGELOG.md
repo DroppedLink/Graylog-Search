@@ -2,6 +2,14 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.5.6] - 2025-10-13
+
+### Changed
+- **UI Adjustment**: Reduced text input box width from 500px to 400px
+  - Makes form inputs more compact and visually balanced
+  - Applies to all text inputs and select boxes in admin search form
+  - Improves overall form layout and appearance
+
 ## [1.5.5] - 2025-10-13
 
 ### Added
