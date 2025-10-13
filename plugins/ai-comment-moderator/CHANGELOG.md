@@ -5,6 +5,28 @@ All notable changes to AI Comment Moderator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2025-01-13
+
+### Fixed
+- **🐛 CRITICAL**: Remote site sync now properly paginates through comments
+  - Was fetching the same 100 comments repeatedly
+  - Now correctly fetches unique comments across multiple pages
+  - Added `$page` parameter to `fetch_comments()` function
+  - AJAX sync loop now passes page numbers to API
+
+### Enhanced
+- Sync feedback now shows total comments available on remote site
+- Shows remaining comment count after each sync
+- Prompts user to sync again if more comments exist
+- Added pagination metadata (X-WP-Total, X-WP-TotalPages) to response
+- Created diagnostic test script (`test-sync-debug.php`) for troubleshooting
+
+### Technical Details
+- `fetch_comments()` signature: Added `$page = 1` parameter
+- API URL now includes `page` query parameter
+- Return data includes: `total_available`, `total_pages`, `current_page`
+- See `PAGINATION_FIX.md` for detailed technical explanation
+
 ## [1.0.1] - 2025-01-13
 
 ### Fixed

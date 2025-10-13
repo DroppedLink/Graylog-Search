@@ -142,7 +142,7 @@ class AI_Comment_Moderator_Remote_Site_Manager {
     /**
      * Fetch comments from remote site
      */
-    public static function fetch_comments($site_id, $limit = 100, $status = 'hold') {
+    public static function fetch_comments($site_id, $limit = 100, $status = 'hold', $page = 1) {
         $site = self::get_site($site_id);
         if (!$site) {
             return array('success' => false, 'error' => 'Site not found');
@@ -152,6 +152,7 @@ class AI_Comment_Moderator_Remote_Site_Manager {
         $api_url = add_query_arg(array(
             'status' => $status,
             'per_page' => min($limit, 100),
+            'page' => $page,
             'order' => 'desc',
             'orderby' => 'date'
         ), $api_url);
@@ -186,6 +187,7 @@ class AI_Comment_Moderator_Remote_Site_Manager {
         }
         
         $body = wp_remote_retrieve_body($response);
+        $headers = wp_remote_retrieve_headers($response);
         $comments = json_decode($body, true);
         
         // Validate response
@@ -199,11 +201,18 @@ class AI_Comment_Moderator_Remote_Site_Manager {
         // Update site stats
         self::update_site_stats($site_id);
         
+        // Extract pagination metadata from headers
+        $total_comments = isset($headers['x-wp-total']) ? intval($headers['x-wp-total']) : null;
+        $total_pages = isset($headers['x-wp-totalpages']) ? intval($headers['x-wp-totalpages']) : null;
+        
         return array(
             'success' => true,
             'comments' => $comments,
             'count' => count($comments),
-            'stored' => $stored
+            'stored' => $stored,
+            'total_available' => $total_comments,
+            'total_pages' => $total_pages,
+            'current_page' => $page
         );
     }
     
@@ -680,10 +689,12 @@ function ai_moderator_ajax_sync_remote_site() {
     // Fetch more comments - up to 500 in batches
     $total_fetched = 0;
     $total_stored = 0;
+    $total_available = null;
+    $total_pages_available = null;
     $pages = 5; // Fetch 5 pages of 100 = 500 comments max
     
     for ($page = 1; $page <= $pages; $page++) {
-        $result = AI_Comment_Moderator_Remote_Site_Manager::fetch_comments($site_id, 100, 'hold');
+        $result = AI_Comment_Moderator_Remote_Site_Manager::fetch_comments($site_id, 100, 'hold', $page);
         
         if (!$result['success']) {
             wp_send_json_error('Sync failed: ' . $result['error']);
@@ -691,6 +702,12 @@ function ai_moderator_ajax_sync_remote_site() {
         
         $total_fetched += $result['count'];
         $total_stored += $result['stored'];
+        
+        // Capture total available from first page
+        if ($page === 1 && isset($result['total_available'])) {
+            $total_available = $result['total_available'];
+            $total_pages_available = $result['total_pages'];
+        }
         
         // If we got fewer than 100, there are no more comments
         if ($result['count'] < 100) {
@@ -701,10 +718,22 @@ function ai_moderator_ajax_sync_remote_site() {
         usleep(100000); // 0.1 seconds
     }
     
+    // Build message
+    $message = "Successfully synced {$total_stored} new comment(s) from remote site. Total fetched: {$total_fetched}";
+    if ($total_available !== null) {
+        $message .= ". Total pending on remote site: {$total_available}";
+        if ($total_stored < $total_available) {
+            $remaining = $total_available - $total_fetched;
+            $message .= " ({$remaining} remaining - click Sync again to fetch more)";
+        }
+    }
+    
     wp_send_json_success(array(
-        'message' => "Successfully synced {$total_stored} new comment(s) from remote site. Total fetched: {$total_fetched}",
+        'message' => $message,
         'fetched' => $total_fetched,
-        'stored' => $total_stored
+        'stored' => $total_stored,
+        'total_available' => $total_available,
+        'has_more' => ($total_available !== null && $total_fetched < $total_available)
     ));
 }
 

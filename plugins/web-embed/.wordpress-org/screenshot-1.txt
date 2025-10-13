@@ -1,8 +1,0 @@
-Web Embed Plugin - Admin Settings Page
-
-This would show a screenshot of the admin settings page with:
-- Security settings (whitelist mode, allowed domains, HTTPS only)
-- Caching options (enable/disable, duration, clear cache button)
-- Advanced options (default dimensions, responsive mode, CSS classes)
-- Shortcode usage guide at the bottom
-
