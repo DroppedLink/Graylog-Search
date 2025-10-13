@@ -2,6 +2,20 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.6.3] - 2025-10-13
+
+### Fixed
+- **Phrase Search Support**: Search terms with spaces are now treated as exact phrases
+  - Example: "CVSS v3 Score" now searches for that exact phrase (not CVSS OR v3 OR Score)
+  - Phrases are automatically wrapped in quotes for Graylog
+  - Multiple phrases can still be separated by commas or newlines
+  - Backward compatibility: Hostnames and filters still split on spaces
+
+### Technical
+- Added `split_on_spaces` parameter to `graylog_parse_multivalue_input()`
+- Search terms no longer split on spaces (phrases stay together)
+- Hostnames and filter terms still split on spaces for backward compatibility
+
 ## [1.6.2] - 2025-10-13
 
 ### Changed

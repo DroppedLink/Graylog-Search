@@ -57,8 +57,8 @@ function graylog_search_logs_handler() {
     wp_send_json_success($results);
 }
 
-// Parse multi-value input (newlines, commas, or spaces)
-function graylog_parse_multivalue_input($input) {
+// Parse multi-value input (newlines, commas, or optionally spaces)
+function graylog_parse_multivalue_input($input, $split_on_spaces = true) {
     $values = array();
     
     // First split by newlines
@@ -81,8 +81,9 @@ function graylog_parse_multivalue_input($input) {
                 }
             }
         } else {
-            // Check if line contains spaces (for backward compatibility)
-            if (strpos($line, ' ') !== false) {
+            // Check if line contains spaces (for backward compatibility with hostnames/filters)
+            // For search terms, we DON'T split on spaces to support phrase searches
+            if ($split_on_spaces && strpos($line, ' ') !== false) {
                 // Split by space
                 $parts = explode(' ', $line);
                 foreach ($parts as $part) {
@@ -92,7 +93,7 @@ function graylog_parse_multivalue_input($input) {
                     }
                 }
             } else {
-                // Single value
+                // Single value (or phrase with spaces if split_on_spaces is false)
                 $values[] = $line;
             }
         }
@@ -135,12 +136,18 @@ function graylog_build_query($fqdn, $search_terms, $filter_out) {
     }
     
     // Add additional search terms (OR'ed together if multiple)
+    // DON'T split on spaces - treat phrases as single search terms
     if (!empty($search_terms)) {
-        $terms = graylog_parse_multivalue_input($search_terms);
+        $terms = graylog_parse_multivalue_input($search_terms, false);
         $term_parts = array();
         foreach ($terms as $term) {
             if (!empty($term)) {
-                $term_parts[] = $term;
+                // If term contains spaces, wrap in quotes for phrase search
+                if (preg_match('/\s/', $term)) {
+                    $term_parts[] = '"' . $term . '"';
+                } else {
+                    $term_parts[] = $term;
+                }
             }
         }
         
