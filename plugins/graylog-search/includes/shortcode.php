@@ -42,11 +42,11 @@ function graylog_search_shortcode($atts) {
             <form class="graylog-search-form">
                 <div class="graylog-form-row">
                     <div class="graylog-form-col">
-                        <label for="<?php echo esc_attr($instance_id); ?>_fqdn">FQDN/Hostname:</label>
+                        <label for="<?php echo esc_attr($instance_id); ?>_fqdn">Hostname:</label>
                         <input type="text" 
                                id="<?php echo esc_attr($instance_id); ?>_fqdn" 
                                class="graylog-input search-fqdn"
-                               placeholder="e.g., server01.example.com">
+                               placeholder="e.g., server01 or server01.example.com">
                     </div>
                     
                     <div class="graylog-form-col">

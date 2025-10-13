@@ -31,15 +31,15 @@ function graylog_search_page() {
                 <table class="form-table">
                     <tr>
                         <th scope="row">
-                            <label for="search_fqdn">FQDN (Hostname)</label>
+                            <label for="search_fqdn">Hostname</label>
                         </th>
                         <td>
                             <input type="text" 
                                    id="search_fqdn" 
                                    name="search_fqdn" 
                                    class="regular-text"
-                                   placeholder="e.g., server01.example.com">
-                            <p class="description">Search by Fully Qualified Domain Name</p>
+                                   placeholder="e.g., server01 or server01.example.com">
+                            <p class="description">Search by hostname or FQDN</p>
                         </td>
                     </tr>
                     

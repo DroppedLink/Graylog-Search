@@ -61,13 +61,13 @@ function graylog_search_logs_handler() {
 function graylog_build_query($fqdn, $search_terms, $filter_out) {
     $query_parts = array();
     
-    // Add FQDN search
+    // Add hostname/FQDN search (searches the fqdn field)
     if (!empty($fqdn)) {
         // Only add quotes if the value contains spaces or special characters
         if (preg_match('/\s/', $fqdn)) {
-            $query_parts[] = 'source:"' . $fqdn . '"';
+            $query_parts[] = 'fqdn:"' . $fqdn . '"';
         } else {
-            $query_parts[] = 'source:' . $fqdn;
+            $query_parts[] = 'fqdn:' . $fqdn;
         }
     }
     

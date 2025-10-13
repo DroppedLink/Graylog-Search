@@ -2,6 +2,20 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.5.1] - 2025-10-13
+
+### Changed
+- **Search Field Updated**: Now searches `fqdn` field instead of `source` field
+  - Better compatibility with Tanium and other data sources that populate custom hostname fields
+  - Allows `source` to remain as IP address while searching by hostname
+- **UI Label Updates**: Changed "FQDN (Hostname)" to just "Hostname" for flexibility
+  - Placeholder text now shows both short and fully qualified examples
+  - Users can search by either short hostname or FQDN
+
+### Technical
+- Modified `graylog_build_query()` to use `fqdn:` field in queries
+- Updated search form labels in admin and shortcode interfaces
+
 ## [1.5.0] - 2025-10-13
 
 ### Added
