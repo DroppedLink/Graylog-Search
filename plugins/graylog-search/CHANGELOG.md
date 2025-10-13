@@ -2,6 +2,21 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.6.4] - 2025-10-13
+
+### Added
+- **Auto-Highlight Search Terms**: Search terms are now automatically highlighted in results
+  - When you search for "Remediation Details", it will be highlighted in yellow in all results
+  - Works with single terms or multiple phrases (separated by commas/newlines)
+  - Makes it easy to spot what you searched for in the logs
+  - Automatically added to the "Highlighted" section for easy removal
+
+### How It Works
+- Search terms from the "Search Terms" field are automatically highlighted when results appear
+- Multiple search terms are each highlighted separately
+- You can still manually highlight additional text by selecting it
+- All highlights can be removed individually or with the "Clear All" button
+
 ## [1.6.3] - 2025-10-13
 
 ### Fixed

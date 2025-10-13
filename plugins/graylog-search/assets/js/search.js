@@ -303,8 +303,68 @@ jQuery(document).ready(function($) {
             applyFilters();
         }
         
+        // Auto-highlight search terms
+        autoHighlightSearchTerms($container, interfaceType);
+        
         // Update result count and IP resolve button
         updateResultCount();
+    }
+    
+    // Auto-highlight search terms in results
+    function autoHighlightSearchTerms($container, interfaceType) {
+        var searchTermsValue;
+        
+        // Get search terms from the appropriate form
+        if (interfaceType === 'admin') {
+            searchTermsValue = $('#search_terms').val();
+        } else {
+            searchTermsValue = $container.find('.search-terms').val();
+        }
+        
+        if (!searchTermsValue || searchTermsValue.trim() === '') {
+            return; // No search terms to highlight
+        }
+        
+        // Parse search terms (split by commas and newlines, don't split on spaces for phrases)
+        var terms = parseMultiValueInput(searchTermsValue);
+        
+        // Highlight each term
+        terms.forEach(function(term) {
+            if (term && term.trim().length > 0) {
+                highlightText(term.trim());
+            }
+        });
+    }
+    
+    // Parse multi-value input (commas and newlines, NOT spaces)
+    function parseMultiValueInput(input) {
+        var values = [];
+        
+        // Split by newlines
+        var lines = input.split(/\r\n|\r|\n/);
+        
+        lines.forEach(function(line) {
+            line = line.trim();
+            if (line === '') {
+                return;
+            }
+            
+            // Split by comma
+            if (line.indexOf(',') !== -1) {
+                var parts = line.split(',');
+                parts.forEach(function(part) {
+                    part = part.trim();
+                    if (part !== '') {
+                        values.push(part);
+                    }
+                });
+            } else {
+                // Single value (or phrase with spaces)
+                values.push(line);
+            }
+        });
+        
+        return values;
     }
     
     // Text selection for interactive filtering
