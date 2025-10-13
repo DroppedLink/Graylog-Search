@@ -125,15 +125,25 @@ function graylog_api_search($api_url, $api_token, $query, $time_range, $limit) {
     
     error_log('Graylog Search: API URL: ' . $url);
     
-    // Make API request with required X-Requested-By header for Graylog 6.1+
-    $response = wp_remote_get($url, array(
+    // Prepare request arguments
+    $args = array(
         'headers' => array(
             'Authorization' => 'Basic ' . base64_encode($api_token . ':token'),
             'Accept' => 'application/json',
             'X-Requested-By' => 'wordpress-plugin'
         ),
         'timeout' => 30
-    ));
+    );
+    
+    // Handle SSL verification setting
+    $disable_ssl = get_option('graylog_search_disable_ssl_verify', false);
+    if ($disable_ssl) {
+        $args['sslverify'] = false;
+        error_log('Graylog Search: SSL verification disabled');
+    }
+    
+    // Make API request with required X-Requested-By header for Graylog 6.1+
+    $response = wp_remote_get($url, $args);
     
     // Check for errors
     if (is_wp_error($response)) {

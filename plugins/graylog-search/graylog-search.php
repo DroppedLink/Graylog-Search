@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Graylog Search
  * Description: Simple interface for non-technical users to search Graylog logs via API
- * Version: 1.4.1
+ * Version: 1.5.0
  * Author: Your Name
  */
 
@@ -11,7 +11,7 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('GRAYLOG_SEARCH_VERSION', '1.4.1');
+define('GRAYLOG_SEARCH_VERSION', '1.5.0');
 define('GRAYLOG_SEARCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GRAYLOG_SEARCH_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -22,6 +22,7 @@ require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/ajax-handler.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/shortcode.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/dns-lookup.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/timezone-handler.php';
+require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/github-updater.php';
 
 // Activation hook
 register_activation_hook(__FILE__, 'graylog_search_activate');
@@ -29,6 +30,8 @@ function graylog_search_activate() {
     // Set default options
     add_option('graylog_api_url', '');
     add_option('graylog_api_token', '');
+    add_option('graylog_search_disable_ssl_verify', '0');
+    add_option('graylog_search_github_token', '');
 }
 
 // Deactivation hook

@@ -15,11 +15,24 @@ A user-friendly WordPress plugin that allows non-technical users to search Grayl
 
 ## Installation
 
-1. Activate the plugin in WordPress
-2. Go to **Graylog Search → Settings**
-3. Enter your Graylog API URL (e.g., `https://graylog.example.com:9000/api`)
-4. Enter your Graylog API token
-5. Save settings
+1. Download `graylog-search.zip` from [GitHub Releases](https://github.com/DroppedLink/Graylog-Search/releases)
+2. Go to WordPress Admin → Plugins → Add New
+3. Click "Upload Plugin"
+4. Choose the `graylog-search.zip` file
+5. Click "Install Now" and then "Activate"
+6. Go to **Graylog Search → Settings**
+7. Enter your Graylog API URL (e.g., `https://graylog.example.com:9000`)
+8. Enter your Graylog API token
+9. Save settings
+
+### Auto-Updates
+
+The plugin includes a built-in GitHub updater. When new versions are released:
+- Update notifications appear in WordPress admin
+- One-click updates from the Plugins page
+- Manual check available in **Graylog Search → Settings**
+
+See [AUTO_UPDATE_GUIDE.md](AUTO_UPDATE_GUIDE.md) for complete details.
 
 ## Getting a Graylog API Token
 
