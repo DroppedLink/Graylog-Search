@@ -143,10 +143,11 @@ function graylog_build_query($fqdn, $search_terms, $filter_out) {
         foreach ($terms as $term) {
             if (!empty($term)) {
                 // If term contains spaces, wrap in quotes for phrase search
+                // Search in message field explicitly when combined with other field searches
                 if (preg_match('/\s/', $term)) {
-                    $term_parts[] = '"' . $term . '"';
+                    $term_parts[] = 'message:"' . $term . '"';
                 } else {
-                    $term_parts[] = $term;
+                    $term_parts[] = 'message:' . $term;
                 }
             }
         }
@@ -175,7 +176,9 @@ function graylog_build_query($fqdn, $search_terms, $filter_out) {
     }
     
     // AND together the different groups (hostnames, search terms, filters)
-    return implode(' AND ', $query_groups);
+    $final_query = implode(' AND ', $query_groups);
+    error_log('Graylog Search: Built query: ' . $final_query);
+    return $final_query;
 }
 
 // Make Graylog API search request

@@ -2,6 +2,19 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.6.5] - 2025-10-13
+
+### Fixed
+- **Hostname + Search Term Combination**: Fixed issue where searching with both hostname and search term returned no results
+  - Search terms now explicitly search the `message` field: `message:term`
+  - Query structure: `fqdn:hostname* AND message:searchterm`
+  - Both hostname-only and search-term-only searches continue to work
+  
+### Added
+- **Query Logging**: Added error logging to show the exact query being sent to Graylog
+  - Check WordPress debug log to see: "Graylog Search: Built query: ..."
+  - Helps with troubleshooting query issues
+
 ## [1.6.4] - 2025-10-13
 
 ### Added
