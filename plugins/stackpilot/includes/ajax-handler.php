@@ -101,11 +101,6 @@ function sp_fetch_endpoints_ajax() {
 	wp_send_json_success($endpoints);
 }
 
-// Legacy aliases for BC (pv_* mapping to sp_* handlers)
-add_action('wp_ajax_pv_list_containers', 'sp_list_containers');
-add_action('wp_ajax_pv_container_action', 'sp_container_action');
-add_action('wp_ajax_pv_fetch_logs', 'sp_fetch_logs');
-add_action('wp_ajax_pv_test_connection', 'sp_test_connection_ajax');
-add_action('wp_ajax_pv_fetch_endpoints', 'sp_fetch_endpoints_ajax');
+// No legacy aliases
 
 

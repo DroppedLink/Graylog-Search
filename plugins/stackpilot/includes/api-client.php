@@ -42,9 +42,6 @@ function sp_test_connection($env) {
 	return is_array($res) ? $res : array('ok' => true);
 }
 
-// Legacy wrappers (BC)
-function pv_api_request($e,$p,$m='GET',$q=array(),$b=null){ return sp_api_request($e,$p,$m,$q,$b); }
-function pv_api_request_with_retry($e,$p,$m='GET',$q=array(),$b=null,$r=3){ return sp_api_request_with_retry($e,$p,$m,$q,$b,$r); }
-function pv_test_connection($e){ return sp_test_connection($e); }
+// No legacy wrappers
 
 

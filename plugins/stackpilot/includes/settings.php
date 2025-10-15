@@ -212,11 +212,8 @@ function sp_settings_page() {
 	<?php
 	if (isset($_POST['sp_save_general'])) {
 		check_admin_referer('sp_settings_nonce');
-		update_option('sp_cache_ttl', max(0, intval($_POST['sp_cache_ttl'] ?? get_option('sp_cache_ttl', 30)))) ;
-		update_option('sp_logs_tail', max(1, intval($_POST['sp_logs_tail'] ?? get_option('sp_logs_tail', 200)))) ;
-		// Keep legacy updated
-		update_option('pv_cache_ttl', get_option('sp_cache_ttl', 30));
-		update_option('pv_logs_tail', get_option('sp_logs_tail', 200));
+		update_option('sp_cache_ttl', max(0, intval($_POST['sp_cache_ttl'] ?? get_option('sp_cache_ttl', 30))));
+		update_option('sp_logs_tail', max(1, intval($_POST['sp_logs_tail'] ?? get_option('sp_logs_tail', 200))));
 		echo '<div class="notice notice-success"><p>Settings saved.</p></div>';
 	}
 }
