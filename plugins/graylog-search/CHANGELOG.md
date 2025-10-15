@@ -2,6 +2,147 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.10.0] - 2025-10-15 - PHASE 2 COMPLETE: Search History with Database 🎉
+
+**Phase 2 is DONE!** This release completes all Advanced Search Capabilities.
+
+### Added - Search History with Database
+- **Complete Audit Trail**: Every search automatically logged to database
+- **Database Table**: New `wp_graylog_search_history` table
+  - Stores search parameters, query strings, result counts
+  - Tracks execution time for performance monitoring
+  - User-specific (multi-user support)
+  - Indexed for fast retrieval
+- **Last 100 Searches**: Auto-cleanup keeps recent history (favorites never deleted)
+- **Favorites System**: Star important searches for quick access
+- **Notes**: Add context/comments to any search
+- **Re-Run Capability**: One-click to re-execute any past search
+
+### Search History Modal
+- **Beautiful Interface**: Professional modal with statistics dashboard
+- **Statistics Cards**:
+  - Total searches (all time)
+  - Searches today
+  - Searches this week
+  - Favorites count
+  - Average execution time
+- **Powerful Filters**:
+  - Date range (from/to)
+  - Favorites only toggle
+  - Text search (search within history)
+  - Real-time filter application
+- **Pagination**: 50 results per page with smooth navigation
+- **Responsive Design**: Works on all screen sizes
+
+### Search History Features
+- **Search Details Display**:
+  - Full Lucene query shown
+  - All parameters (hostname, terms, filters, time range)
+  - Result count
+  - Execution time
+  - Timestamp
+- **Actions per Search**:
+  - ⭐ Favorite/Unfavorite (toggle with one click)
+  - ▶️ Re-Run (fills form and searches)
+  - 📝 Add Note (personal annotation)
+  - 🗑️ Delete (remove from history)
+- **Smart Re-Run**: Automatically populates all search fields and executes
+- **Color-Coded UI**: Favorites highlighted in gold
+
+### Statistics & Analytics
+- **Search Trends**: See your search patterns
+- **Performance Metrics**: Track average query execution time
+- **Top Queries**: Most frequently run searches (top 5)
+- **Activity Timeline**: When you search most (today, this week)
+
+### Database Implementation
+- **Robust Schema**: Properly indexed for performance
+- **Auto-Cleanup**: Maintains optimal database size
+- **Favorites Protection**: Never auto-delete favorited searches
+- **User Isolation**: Each user sees only their searches
+- **Migration Ready**: dbDelta for safe upgrades
+
+### Integration & Logging
+- **Automatic Logging**: Every search logged via AJAX handler
+- **Execution Time Tracking**: Frontend sends timing data
+- **Cache-Aware**: Works with transient caching (5-min TTL)
+- **Recent Searches Integration**: Feeds into existing recent searches dropdown
+
+### User Experience
+- **Quick Access Button**: "Search History" button on main search page
+- **Keyboard Friendly**: Full keyboard navigation
+- **Visual Feedback**: Notifications for all actions
+- **Dark Mode Support**: Seamless theme integration
+- **Loading States**: Smooth transitions and indicators
+
+### Technical
+- New file: `includes/search-history.php` (23KB, 500+ lines)
+  - Database table creation with dbDelta
+  - CRUD operations for search history
+  - 5 AJAX endpoints
+  - Statistics calculation
+  - Auto-cleanup logic
+- New file: `assets/js/search-history.js` (22KB, 600+ lines)
+  - Complete modal UI
+  - Filter system
+  - Pagination
+  - Re-run capability
+  - Statistics dashboard
+- New file: `assets/css/search-history.css` (11KB, 400+ lines)
+  - Modal styling
+  - Statistics cards
+  - History items
+  - Responsive breakpoints
+- Modified: `includes/ajax-handler.php`
+  - Added `graylog_log_search_to_history()` call after every search
+  - Tracks execution time from frontend
+- Modified: `graylog-search.php`
+  - v1.10.0
+  - Includes search-history.php
+  - Enqueues search-history JS/CSS
+
+### AJAX Endpoints
+- `graylog_get_search_history`: Retrieve history with filters
+- `graylog_get_search_history_count`: Total count for pagination
+- `graylog_toggle_favorite`: Star/unstar searches
+- `graylog_add_search_note`: Add personal notes
+- `graylog_delete_search_history`: Remove single search
+- `graylog_get_search_statistics`: Dashboard stats
+
+### Database Schema
+```sql
+CREATE TABLE wp_graylog_search_history (
+    id bigint(20) unsigned AUTO_INCREMENT PRIMARY KEY,
+    user_id bigint(20) unsigned NOT NULL,
+    search_params text NOT NULL,
+    query_string text,
+    result_count int(11) DEFAULT 0,
+    is_favorite tinyint(1) DEFAULT 0,
+    search_date datetime NOT NULL,
+    execution_time float DEFAULT 0,
+    notes text,
+    KEY user_id (user_id),
+    KEY search_date (search_date),
+    KEY is_favorite (is_favorite)
+);
+```
+
+### Benefits
+✅ **Complete Audit Trail**: Know exactly what was searched and when  
+✅ **Compliance Ready**: Track all user activity for regulations  
+✅ **Productivity**: Re-run complex searches instantly  
+✅ **Collaboration**: Share search strategies via notes  
+✅ **Performance Monitoring**: Track query execution times  
+✅ **Knowledge Base**: Favorites build institutional knowledge  
+
+### Phase 2 Complete! 🎉
+✅ Regex Search (v1.8.0)  
+✅ Visual Query Builder (v1.9.0)  
+✅ Field-Specific Search (v1.9.0)  
+✅ Search History with Database (v1.10.0) - **DONE!**
+
+**Next: Phase 3 - Export & Reporting** (PDF, Excel, Scheduled Reports, Bulk Export)
+
 ## [1.9.0] - 2025-10-15 - PHASE 2: Visual Query Builder & Field Search
 
 ### Added - Visual Query Builder

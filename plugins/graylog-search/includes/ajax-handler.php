@@ -75,6 +75,22 @@ function graylog_search_logs_handler() {
             'filter_out' => $filter_out,
             'time_range' => $time_range
         ));
+        
+        // Log to search history database
+        $execution_time = isset($_POST['execution_time']) ? floatval($_POST['execution_time']) : 0;
+        graylog_log_search_to_history(
+            array(
+                'fqdn' => $fqdn,
+                'search_terms' => $search_terms,
+                'filter_out' => $filter_out,
+                'time_range' => $time_range,
+                'limit' => $limit,
+                'offset' => $offset
+            ),
+            $query,
+            isset($results['total_results']) ? $results['total_results'] : count($results['messages'] ?? []),
+            $execution_time
+        );
     }
     
     error_log('Graylog Search: Success - ' . count($results['messages'] ?? []) . ' messages');
