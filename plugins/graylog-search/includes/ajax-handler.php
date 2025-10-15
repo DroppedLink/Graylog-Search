@@ -28,10 +28,21 @@ function graylog_search_logs_handler() {
     $filter_out = sanitize_text_field($_POST['filter_out']);
     $time_range = intval($_POST['time_range']);
     $limit = intval($_POST['limit']);
+    $offset = isset($_POST['offset']) ? intval($_POST['offset']) : 0;
     
     // Build Graylog query
     $query = graylog_build_query($fqdn, $search_terms, $filter_out);
     error_log('Graylog Search: Query built: ' . $query);
+    
+    // Check cache first (5-minute TTL)
+    $cache_key = 'graylog_search_' . md5($query . $time_range . $limit . $offset);
+    $cached_results = get_transient($cache_key);
+    
+    if ($cached_results !== false) {
+        error_log('Graylog Search: Returning cached results');
+        wp_send_json_success($cached_results);
+        return;
+    }
     
     // Get API settings
     $api_url = get_option('graylog_api_url', '');
@@ -44,13 +55,26 @@ function graylog_search_logs_handler() {
     }
     
     error_log('Graylog Search: Making API request');
-    // Make API request
-    $results = graylog_api_search($api_url, $api_token, $query, $time_range, $limit);
+    // Make API request with pagination
+    $results = graylog_api_search($api_url, $api_token, $query, $time_range, $limit, $offset);
     
     if (is_wp_error($results)) {
         error_log('Graylog Search: API error: ' . $results->get_error_message());
         wp_send_json_error(array('message' => $results->get_error_message()));
         return;
+    }
+    
+    // Cache results for 5 minutes
+    set_transient($cache_key, $results, 5 * MINUTE_IN_SECONDS);
+    
+    // Track recent search
+    if (is_user_logged_in()) {
+        graylog_add_to_recent_searches(array(
+            'fqdn' => $fqdn,
+            'search_terms' => $search_terms,
+            'filter_out' => $filter_out,
+            'time_range' => $time_range
+        ));
     }
     
     error_log('Graylog Search: Success - ' . count($results['messages'] ?? []) . ' messages');
@@ -182,7 +206,7 @@ function graylog_build_query($fqdn, $search_terms, $filter_out) {
 }
 
 // Make Graylog API search request
-function graylog_api_search($api_url, $api_token, $query, $time_range, $limit) {
+function graylog_api_search($api_url, $api_token, $query, $time_range, $limit, $offset = 0) {
     // Clean up API URL
     $api_url = rtrim($api_url, '/');
     
@@ -194,11 +218,12 @@ function graylog_api_search($api_url, $api_token, $query, $time_range, $limit) {
     // Build search endpoint - Graylog 6.1+ uses /search/messages
     $endpoint = $api_url . '/search/messages';
     
-    // Build query parameters
+    // Build query parameters with pagination
     $params = array(
         'query' => $query,
         'fields' => 'timestamp,source,message,level',
-        'size' => $limit
+        'size' => $limit,
+        'offset' => $offset
     );
     
     $url = add_query_arg($params, $endpoint);

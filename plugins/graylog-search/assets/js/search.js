@@ -23,6 +23,11 @@ jQuery(document).ready(function($) {
     // Load saved timezone preference on page load
     loadTimezonePreference();
     
+    // Load saved searches, recent searches, and quick filters
+    loadSavedSearches();
+    loadRecentSearches();
+    loadQuickFilters();
+    
     // Handle search form submission - Admin interface
     $('#graylog-search-form').on('submit', function(e) {
         e.preventDefault();
@@ -1609,5 +1614,334 @@ jQuery(document).ready(function($) {
         
         $(this).closest('.row-actions-dropdown').hide();
     });
+    
+    // ========================================
+    // Saved Searches, Recent Searches, Quick Filters
+    // ========================================
+    
+    // Load saved searches
+    function loadSavedSearches() {
+        $.ajax({
+            url: graylogSearch.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'graylog_get_saved_searches',
+                nonce: graylogSearch.nonce
+            },
+            success: function(response) {
+                if (response.success && response.data.searches) {
+                    displaySavedSearches(response.data.searches);
+                }
+            }
+        });
+    }
+    
+    // Display saved searches
+    function displaySavedSearches(searches) {
+        var $list = $('#saved-searches-list');
+        
+        if (Object.keys(searches).length === 0) {
+            $list.html('<p style="color: #666; font-size: 12px; margin: 0;">No saved searches yet</p>');
+            return;
+        }
+        
+        var html = '<div style="display: flex; flex-direction: column; gap: 5px;">';
+        $.each(searches, function(name, data) {
+            html += '<div class="saved-search-item" style="display: flex; justify-content: space-between; align-items: center; padding: 5px; background: white; border-radius: 3px; border: 1px solid #ddd;">';
+            html += '<button class="button button-small load-saved-search" data-name="' + escapeHtml(name) + '" style="flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">';
+            html += '📁 ' + escapeHtml(name);
+            html += '</button>';
+            html += '<button class="button button-small button-link-delete delete-saved-search" data-name="' + escapeHtml(name) + '" style="color: #b32d2e; margin-left: 5px;" title="Delete">✕</button>';
+            html += '</div>';
+        });
+        html += '</div>';
+        
+        $list.html(html);
+    }
+    
+    // Load recent searches
+    function loadRecentSearches() {
+        $.ajax({
+            url: graylogSearch.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'graylog_get_recent_searches',
+                nonce: graylogSearch.nonce
+            },
+            success: function(response) {
+                if (response.success && response.data.searches) {
+                    displayRecentSearches(response.data.searches);
+                }
+            }
+        });
+    }
+    
+    // Display recent searches
+    function displayRecentSearches(searches) {
+        var $list = $('#recent-searches-list');
+        
+        if (searches.length === 0) {
+            $list.html('<p style="color: #666; font-size: 12px; margin: 0;">No recent searches</p>');
+            return;
+        }
+        
+        var html = '<div style="display: flex; flex-direction: column; gap: 3px;">';
+        $.each(searches.slice(0, 5), function(index, data) {
+            var label = [];
+            if (data.fqdn) label.push('Host: ' + data.fqdn.substring(0, 15) + (data.fqdn.length > 15 ? '...' : ''));
+            if (data.search_terms) label.push('Terms: ' + data.search_terms.substring(0, 15) + (data.search_terms.length > 15 ? '...' : ''));
+            if (label.length === 0) label.push('All logs');
+            
+            html += '<button class="button button-small load-recent-search" data-index="' + index + '" style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px;">';
+            html += '🕒 ' + label.join(', ');
+            html += '</button>';
+        });
+        html += '</div>';
+        
+        $list.html(html);
+    }
+    
+    // Load quick filters
+    function loadQuickFilters() {
+        $.ajax({
+            url: graylogSearch.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'graylog_get_quick_filters',
+                nonce: graylogSearch.nonce
+            },
+            success: function(response) {
+                if (response.success && response.data.filters) {
+                    // Quick filters are already displayed in HTML, just store the data
+                    window.graylogQuickFilters = response.data.filters;
+                }
+            }
+        });
+    }
+    
+    // Save current search
+    $(document).on('click', '#save-current-search-btn', function() {
+        var searchName = prompt('Enter a name for this search:');
+        if (!searchName) return;
+        
+        var formData = {
+            action: 'graylog_save_search',
+            nonce: graylogSearch.nonce,
+            name: searchName,
+            fqdn: $('#search_fqdn').val(),
+            search_terms: $('#search_terms').val(),
+            filter_out: $('#filter_out').val(),
+            time_range: $('#time_range').val()
+        };
+        
+        $.ajax({
+            url: graylogSearch.ajaxUrl,
+            type: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    alert('Search saved successfully!');
+                    displaySavedSearches(response.data.searches);
+                } else {
+                    alert('Error saving search: ' + response.data.message);
+                }
+            }
+        });
+    });
+    
+    // Load saved search
+    $(document).on('click', '.load-saved-search', function() {
+        var searchName = $(this).data('name');
+        
+        $.ajax({
+            url: graylogSearch.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'graylog_get_saved_searches',
+                nonce: graylogSearch.nonce
+            },
+            success: function(response) {
+                if (response.success && response.data.searches[searchName]) {
+                    var data = response.data.searches[searchName];
+                    $('#search_fqdn').val(data.fqdn || '');
+                    $('#search_terms').val(data.search_terms || '');
+                    $('#filter_out').val(data.filter_out || '');
+                    $('#time_range').val(data.time_range || 86400);
+                    
+                    // Automatically trigger search
+                    $('#graylog-search-form').trigger('submit');
+                }
+            }
+        });
+    });
+    
+    // Delete saved search
+    $(document).on('click', '.delete-saved-search', function(e) {
+        e.stopPropagation();
+        
+        if (!confirm('Delete this saved search?')) return;
+        
+        var searchName = $(this).data('name');
+        
+        $.ajax({
+            url: graylogSearch.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'graylog_delete_saved_search',
+                nonce: graylogSearch.nonce,
+                name: searchName
+            },
+            success: function(response) {
+                if (response.success) {
+                    displaySavedSearches(response.data.searches);
+                } else {
+                    alert('Error deleting search: ' + response.data.message);
+                }
+            }
+        });
+    });
+    
+    // Load recent search
+    $(document).on('click', '.load-recent-search', function() {
+        $.ajax({
+            url: graylogSearch.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'graylog_get_recent_searches',
+                nonce: graylogSearch.nonce
+            },
+            success: function(response) {
+                if (response.success && response.data.searches) {
+                    var index = parseInt($(this).data('index'));
+                    var data = response.data.searches[index];
+                    
+                    if (data) {
+                        $('#search_fqdn').val(data.fqdn || '');
+                        $('#search_terms').val(data.search_terms || '');
+                        $('#filter_out').val(data.filter_out || '');
+                        $('#time_range').val(data.time_range || 86400);
+                        
+                        // Automatically trigger search
+                        $('#graylog-search-form').trigger('submit');
+                    }
+                }
+            }
+        });
+    });
+    
+    // Apply quick filter
+    $(document).on('click', '.quick-filter-btn', function() {
+        var filterName = $(this).data('name');
+        
+        if (!window.graylogQuickFilters) return;
+        
+        var filter = window.graylogQuickFilters.find(function(f) {
+            return f.name === filterName;
+        });
+        
+        if (filter) {
+            $('#search_fqdn').val(filter.data.fqdn || '');
+            $('#search_terms').val(filter.data.search_terms || '');
+            $('#filter_out').val(filter.data.filter_out || '');
+            $('#time_range').val(filter.data.time_range || 86400);
+            
+            // Automatically trigger search
+            $('#graylog-search-form').trigger('submit');
+        }
+    });
+    
+    // Update recent searches after a search completes
+    var originalPerformSearch = performSearch;
+    performSearch = function($form, interfaceType) {
+        var promise = originalPerformSearch.call(this, $form, interfaceType);
+        
+        // Reload recent searches after a successful search
+        setTimeout(function() {
+            loadRecentSearches();
+        }, 1000);
+        
+        return promise;
+    };
+    
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        var map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+    
+    // ========================================
+    // Dark Mode Toggle
+    // ========================================
+    
+    // Initialize dark mode
+    initDarkMode();
+    
+    function initDarkMode() {
+        // Check if user has a saved preference
+        var darkMode = localStorage.getItem('graylog-dark-mode');
+        
+        // If no preference, check system preference
+        if (darkMode === null) {
+            darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'enabled' : 'disabled';
+        }
+        
+        // Apply dark mode if enabled
+        if (darkMode === 'enabled') {
+            $('body').addClass('graylog-dark-mode');
+        }
+        
+        // Add toggle button
+        var toggleHtml = '<div class="graylog-dark-mode-toggle" title="Toggle dark mode">' +
+                         '<span class="dark-mode-icon">' + (darkMode === 'enabled' ? '☀️' : '🌙') + '</span>' +
+                         '</div>';
+        
+        // Only add if not already present
+        if ($('.graylog-dark-mode-toggle').length === 0) {
+            $('body').append(toggleHtml);
+        }
+    }
+    
+    // Handle dark mode toggle click
+    $(document).on('click', '.graylog-dark-mode-toggle', function() {
+        var $body = $('body');
+        var $icon = $(this).find('.dark-mode-icon');
+        
+        if ($body.hasClass('graylog-dark-mode')) {
+            // Disable dark mode
+            $body.removeClass('graylog-dark-mode');
+            localStorage.setItem('graylog-dark-mode', 'disabled');
+            $icon.text('🌙');
+            
+            // Save to server
+            saveDarkModePreference(false);
+        } else {
+            // Enable dark mode
+            $body.addClass('graylog-dark-mode');
+            localStorage.setItem('graylog-dark-mode', 'enabled');
+            $icon.text('☀️');
+            
+            // Save to server
+            saveDarkModePreference(true);
+        }
+    });
+    
+    // Save dark mode preference to server
+    function saveDarkModePreference(enabled) {
+        $.ajax({
+            url: graylogSearch.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'graylog_save_dark_mode',
+                nonce: graylogSearch.nonce,
+                enabled: enabled ? '1' : '0'
+            }
+        });
+    }
 });
 

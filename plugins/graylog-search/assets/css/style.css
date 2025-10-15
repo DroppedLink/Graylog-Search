@@ -1,15 +1,91 @@
 /* Graylog Search Plugin Styles */
 
+/* CSS Variables for Dark Mode */
+:root {
+    --graylog-bg-primary: #fff;
+    --graylog-bg-secondary: #f8f9fa;
+    --graylog-bg-tertiary: #f6f7f7;
+    --graylog-text-primary: #333;
+    --graylog-text-secondary: #666;
+    --graylog-text-tertiary: #999;
+    --graylog-border-color: #ccd0d4;
+    --graylog-border-light: #dee2e6;
+    --graylog-border-dark: #ced4da;
+    --graylog-accent-primary: #0073aa;
+    --graylog-accent-hover: #005a87;
+    --graylog-shadow: rgba(0,0,0,0.04);
+    --graylog-shadow-medium: rgba(0,0,0,0.1);
+    --graylog-shadow-strong: rgba(0,0,0,0.15);
+    --graylog-error-bg: #f8d7da;
+    --graylog-error-text: #721c24;
+    --graylog-error-border: #f5c6cb;
+    --graylog-success-bg: #d4edda;
+    --graylog-success-text: #155724;
+    --graylog-highlight-bg: #ffff00;
+    --graylog-highlight-text: #000;
+}
+
+/* Dark Mode */
+body.graylog-dark-mode {
+    --graylog-bg-primary: #1e1e1e;
+    --graylog-bg-secondary: #2d2d2d;
+    --graylog-bg-tertiary: #3a3a3a;
+    --graylog-text-primary: #e0e0e0;
+    --graylog-text-secondary: #b0b0b0;
+    --graylog-text-tertiary: #808080;
+    --graylog-border-color: #404040;
+    --graylog-border-light: #4a4a4a;
+    --graylog-border-dark: #555;
+    --graylog-accent-primary: #4a9eff;
+    --graylog-accent-hover: #6eb3ff;
+    --graylog-shadow: rgba(0,0,0,0.3);
+    --graylog-shadow-medium: rgba(0,0,0,0.5);
+    --graylog-shadow-strong: rgba(0,0,0,0.7);
+    --graylog-error-bg: #5a2828;
+    --graylog-error-text: #ffb3b3;
+    --graylog-error-border: #8a3a3a;
+    --graylog-success-bg: #2d4a2d;
+    --graylog-success-text: #a8d8a8;
+    --graylog-highlight-bg: #666600;
+    --graylog-highlight-text: #ffff99;
+}
+
+/* Dark Mode Toggle Button */
+.graylog-dark-mode-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: var(--graylog-bg-secondary);
+    border: 1px solid var(--graylog-border-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px var(--graylog-shadow-medium);
+    transition: all 0.3s;
+    font-size: 24px;
+}
+
+.graylog-dark-mode-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px var(--graylog-shadow-strong);
+}
+
 .graylog-search-wrap {
     max-width: 1400px;
 }
 
 .graylog-search-form-container {
-    background: #fff;
+    background: var(--graylog-bg-primary);
     padding: 20px;
-    border: 1px solid #ccd0d4;
-    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    border: 1px solid var(--graylog-border-color);
+    box-shadow: 0 1px 1px var(--graylog-shadow);
     margin-bottom: 20px;
+    color: var(--graylog-text-primary);
 }
 
 .graylog-search-form-container .form-table th {

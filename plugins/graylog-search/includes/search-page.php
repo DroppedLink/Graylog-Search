@@ -26,6 +26,46 @@ function graylog_search_page() {
     <div class="wrap graylog-search-wrap">
         <h1>Graylog Log Search</h1>
         
+        <!-- Quick Filters, Saved Searches, and Recent Searches -->
+        <div class="graylog-search-helpers" style="display: flex; gap: 20px; margin-bottom: 20px;">
+            
+            <!-- Quick Filters -->
+            <div class="graylog-helper-panel" style="flex: 1; background: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px solid #dee2e6;">
+                <h3 style="margin: 0 0 10px 0; font-size: 14px;">⚡ Quick Filters</h3>
+                <div id="quick-filters-list" style="display: flex; flex-wrap: wrap; gap: 5px;">
+                    <button class="button button-small quick-filter-btn" data-name="Errors (Last Hour)">
+                        🔴 Errors (1h)
+                    </button>
+                    <button class="button button-small quick-filter-btn" data-name="Warnings (Last Hour)">
+                        ⚠️ Warnings (1h)
+                    </button>
+                    <button class="button button-small quick-filter-btn" data-name="Errors (Today)">
+                        🔴 Errors (24h)
+                    </button>
+                    <button class="button button-small quick-filter-btn" data-name="All Logs (Last Hour)">
+                        📋 All (1h)
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Saved Searches -->
+            <div class="graylog-helper-panel" style="flex: 1; background: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px solid #dee2e6;">
+                <h3 style="margin: 0 0 10px 0; font-size: 14px;">💾 Saved Searches <button class="button button-small" id="save-current-search-btn" style="float: right; padding: 2px 8px;">Save Current</button></h3>
+                <div id="saved-searches-list" style="max-height: 150px; overflow-y: auto;">
+                    <p style="color: #666; font-size: 12px; margin: 0;">No saved searches yet</p>
+                </div>
+            </div>
+            
+            <!-- Recent Searches -->
+            <div class="graylog-helper-panel" style="flex: 1; background: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px solid #dee2e6;">
+                <h3 style="margin: 0 0 10px 0; font-size: 14px;">🕒 Recent Searches</h3>
+                <div id="recent-searches-list" style="max-height: 150px; overflow-y: auto;">
+                    <p style="color: #666; font-size: 12px; margin: 0;">No recent searches</p>
+                </div>
+            </div>
+            
+        </div>
+        
         <div class="graylog-search-form-container">
             <form id="graylog-search-form">
                 <table class="form-table">

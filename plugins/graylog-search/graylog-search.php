@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Graylog Search
  * Description: Simple interface for non-technical users to search Graylog logs via API
- * Version: 1.6.5
+ * Version: 1.7.0
  * Author: Your Name
  */
 
@@ -11,7 +11,7 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('GRAYLOG_SEARCH_VERSION', '1.6.5');
+define('GRAYLOG_SEARCH_VERSION', '1.7.0');
 define('GRAYLOG_SEARCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GRAYLOG_SEARCH_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -23,6 +23,7 @@ require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/shortcode.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/dns-lookup.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/timezone-handler.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/github-updater.php';
+require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/saved-searches.php';
 
 // Activation hook
 register_activation_hook(__FILE__, 'graylog_search_activate');
@@ -54,6 +55,14 @@ function graylog_search_enqueue_assets($hook) {
         return;
     }
     
+    graylog_search_enqueue_common_assets();
+}
+
+// Also enqueue on frontend for shortcode
+add_action('wp_enqueue_scripts', 'graylog_search_enqueue_common_assets');
+
+// Common asset enqueuing function
+function graylog_search_enqueue_common_assets() {
     // Enqueue CSS
     wp_enqueue_style(
         'graylog-search-style',
@@ -62,10 +71,19 @@ function graylog_search_enqueue_assets($hook) {
         GRAYLOG_SEARCH_VERSION
     );
     
-    // Enqueue JavaScript
+    // Enqueue main JavaScript
     wp_enqueue_script(
         'graylog-search-script',
         GRAYLOG_SEARCH_PLUGIN_URL . 'assets/js/search.js',
+        array('jquery'),
+        GRAYLOG_SEARCH_VERSION,
+        true
+    );
+    
+    // Enqueue keyboard shortcuts
+    wp_enqueue_script(
+        'graylog-search-keyboard',
+        GRAYLOG_SEARCH_PLUGIN_URL . 'assets/js/keyboard-shortcuts.js',
         array('jquery'),
         GRAYLOG_SEARCH_VERSION,
         true
