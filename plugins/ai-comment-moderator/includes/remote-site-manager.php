@@ -357,7 +357,7 @@ class AI_Comment_Moderator_Remote_Site_Manager {
     /**
      * Encrypt app password for storage
      */
-    private static function encrypt_password($password) {
+    public static function encrypt_password($password) {
         if (defined('AUTH_KEY') && AUTH_KEY) {
             return base64_encode($password . '::' . md5(AUTH_KEY));
         }
@@ -367,7 +367,7 @@ class AI_Comment_Moderator_Remote_Site_Manager {
     /**
      * Decrypt app password
      */
-    private static function decrypt_password($encrypted) {
+    public static function decrypt_password($encrypted) {
         $decoded = base64_decode($encrypted);
         if (strpos($decoded, '::') !== false) {
             list($password, $hash) = explode('::', $decoded, 2);

@@ -5,6 +5,14 @@ All notable changes to AI Comment Moderator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2025-01-13
+
+### Fixed
+- **CRITICAL**: Fatal error when updating remote site password
+  - Changed `encrypt_password()` and `decrypt_password()` from `private` to `public`
+  - Error: "Call to private method from global scope"
+  - Now password updates work correctly on remote site edit page
+
 ## [1.0.5] - 2025-01-13
 
 ### Fixed
