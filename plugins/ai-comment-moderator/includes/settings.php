@@ -170,8 +170,39 @@ function ai_comment_moderator_settings_page() {
     if (isset($_POST['ai_moderator_settings_submit'])) {
         check_admin_referer('ai_moderator_settings_nonce');
         
-        update_option('ai_comment_moderator_ollama_url', sanitize_url($_POST['ollama_url']));
-        update_option('ai_comment_moderator_ollama_model', sanitize_text_field($_POST['ollama_model']));
+        // Save active provider
+        $active_provider = sanitize_text_field($_POST['active_provider']);
+        update_option('ai_comment_moderator_active_provider', $active_provider);
+        
+        // Save provider-specific settings based on which provider is active
+        if ($active_provider === 'ollama') {
+            update_option('ai_comment_moderator_ollama_url', sanitize_url($_POST['ollama_url']));
+            update_option('ai_comment_moderator_ollama_model', sanitize_text_field($_POST['ollama_model']));
+        } elseif ($active_provider === 'openai') {
+            if (!empty($_POST['openai_api_key'])) {
+                $encrypted_key = AI_OpenAI_Provider_Encrypt_Helper::encrypt($_POST['openai_api_key']);
+                update_option('ai_comment_moderator_openai_api_key', $encrypted_key);
+            }
+            update_option('ai_comment_moderator_openai_model', sanitize_text_field($_POST['openai_model']));
+            update_option('ai_comment_moderator_openai_budget_alert', floatval($_POST['openai_budget_alert']));
+        } elseif ($active_provider === 'claude') {
+            if (!empty($_POST['claude_api_key'])) {
+                $encrypted_key = AI_Claude_Provider_Encrypt_Helper::encrypt($_POST['claude_api_key']);
+                update_option('ai_comment_moderator_claude_api_key', $encrypted_key);
+            }
+            update_option('ai_comment_moderator_claude_model', sanitize_text_field($_POST['claude_model']));
+            update_option('ai_comment_moderator_claude_budget_alert', floatval($_POST['claude_budget_alert']));
+        } elseif ($active_provider === 'openrouter') {
+            if (!empty($_POST['openrouter_api_key'])) {
+                $encrypted_key = AI_OpenRouter_Provider_Encrypt_Helper::encrypt($_POST['openrouter_api_key']);
+                update_option('ai_comment_moderator_openrouter_api_key', $encrypted_key);
+            }
+            update_option('ai_comment_moderator_openrouter_model', sanitize_text_field($_POST['openrouter_model']));
+            update_option('ai_comment_moderator_openrouter_fallbacks', sanitize_text_field($_POST['openrouter_fallbacks']));
+            update_option('ai_comment_moderator_openrouter_budget_alert', floatval($_POST['openrouter_budget_alert']));
+        }
+        
+        // Save general settings
         update_option('ai_comment_moderator_batch_size', intval($_POST['batch_size']));
         update_option('ai_comment_moderator_auto_process', isset($_POST['auto_process']) ? '1' : '0');
         update_option('ai_comment_moderator_rate_limit', intval($_POST['rate_limit']));

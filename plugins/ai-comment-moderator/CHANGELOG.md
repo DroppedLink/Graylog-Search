@@ -5,6 +5,201 @@ All notable changes to AI Comment Moderator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-01-15
+
+### 🎉 MAJOR RELEASE - Multi-Provider AI Support
+
+This is a major architectural upgrade that adds support for multiple AI providers while maintaining backward compatibility with existing Ollama setups.
+
+### Added
+
+#### Multi-Provider Architecture
+- **Provider System**: Flexible plugin architecture supporting multiple AI providers
+  - `AI_Provider_Interface`: Standard interface for all providers
+  - `AI_Provider_Factory`: Centralized provider management
+  - Hot-swappable providers without code changes
+  - Provider-specific configuration and validation
+
+#### New AI Providers
+- **OpenAI (GPT)**: Full integration with OpenAI's GPT models
+  - Supports: GPT-3.5 Turbo, GPT-4, GPT-4 Turbo, GPT-4o
+  - Automatic token counting and cost tracking
+  - Budget alerts when monthly spending exceeds threshold
+  - Per-token pricing calculation
+  - Usage analytics (tokens, cost per comment)
+  
+- **Claude (Anthropic)**: Integration with Claude models
+  - Supports: Claude 3 Opus, Sonnet, Haiku, and Claude 3.5 Sonnet
+  - Message format conversion (Claude-specific API)
+  - Token counting and cost estimation
+  - Budget monitoring
+  - Optimized for accuracy and safety
+  
+- **OpenRouter**: Universal gateway to 100+ AI models
+  - Single API key for multiple providers
+  - Dynamic model list fetched from OpenRouter API
+  - Automatic fallback system (try alternate models if primary fails)
+  - Cost tracking across different models
+  - Access to models from OpenAI, Anthropic, Meta, Google, and more
+  - Model comparison with pricing information
+
+#### Database Enhancements
+- **Provider Usage Tracking** (`wp_ai_provider_usage`)
+  - Track tokens used per provider/model
+  - Cost accumulation in USD
+  - Comments processed count
+  - Daily aggregated statistics
+  - Historical usage data for analytics
+  
+- **Correction Tracking** (`wp_ai_corrections`)
+  - Record when admin overrides AI decisions
+  - Track which provider/model made errors
+  - Confidence score at time of decision
+  - Accuracy metrics for future analysis
+  
+- **Notification Queue** (`wp_ai_notifications`)
+  - Queued notification system
+  - Email and webhook notifications
+  - Retry logic for failed deliveries
+  - Status tracking (pending/sent/failed)
+
+#### Provider-Specific Features
+- **Ollama** (refactored):
+  - Maintains all existing functionality
+  - Implements new provider interface
+  - Backward compatible with existing setups
+  - Cost: $0 (self-hosted)
+  
+- **OpenAI**:
+  - Encrypted API key storage
+  - Model auto-discovery
+  - Rate limiting (respects OpenAI quotas)
+  - Budget alerts
+  - Cost per comment calculation
+  
+- **Claude**:
+  - Anthropic API v2023-06-01 support
+  - System message support
+  - Per-million-token pricing
+  - Model-specific cost tracking
+  
+- **OpenRouter**:
+  - Dynamic model listing (cached 1 hour)
+  - Fallback model configuration
+  - Universal API compatibility
+  - Cost tracking from response headers
+
+### Changed
+- **Version**: 1.0.6 → 2.0.0 (major version bump)
+- **Description**: "Ollama-powered..." → "Multi-provider AI moderation..."
+- **Architecture**: Monolithic → Provider-based architecture
+- **Database**: Added 3 new tables for tracking and notifications
+- **Settings**: New provider selection dropdown
+- **Configuration**: Provider-specific settings sections
+
+### Technical Details
+
+#### New Files
+```
+includes/providers/
+├── ai-provider-interface.php      # Interface definition
+├── ollama-provider.php             # Refactored Ollama
+├── openai-provider.php             # OpenAI GPT integration
+├── claude-provider.php             # Anthropic Claude integration
+└── openrouter-provider.php         # OpenRouter gateway
+
+includes/
+└── ai-provider-factory.php         # Provider factory & registry
+```
+
+#### Provider Interface Methods
+- `test_connection()` - Validate API credentials
+- `get_models()` - Fetch available models
+- `process_comment()` - Send comment to AI
+- `get_provider_name()` - Internal identifier
+- `get_provider_display_name()` - User-friendly name
+- `supports_streaming()` - Streaming capability check
+- `get_config_fields()` - Dynamic settings fields
+- `validate_config()` - Configuration validation
+- `estimate_cost()` - Pre-processing cost estimate
+
+#### Cost Tracking
+- OpenAI: $0.0005-$0.06 per 1K tokens (model-dependent)
+- Claude: $0.00025-$0.075 per 1K tokens (model-dependent)
+- OpenRouter: Variable by model (~$0.001 average)
+- Ollama: $0 (self-hosted)
+
+#### Database Schema
+```sql
+-- Provider usage tracking
+CREATE TABLE wp_ai_provider_usage (
+  provider varchar(50),
+  model varchar(100),
+  tokens_used int,
+  cost_usd decimal(10,6),
+  comments_processed int,
+  date date,
+  KEY provider_date (provider, date)
+);
+
+-- Correction tracking
+CREATE TABLE wp_ai_corrections (
+  comment_id bigint(20),
+  ai_decision varchar(20),
+  admin_decision varchar(20),
+  provider varchar(50),
+  model varchar(100),
+  confidence int,
+  corrected_at datetime
+);
+
+-- Notification queue
+CREATE TABLE wp_ai_notifications (
+  type varchar(50),
+  recipient varchar(255),
+  subject text,
+  message text,
+  status varchar(20),
+  sent_at datetime
+);
+```
+
+### Backward Compatibility
+- ✅ Existing Ollama setups continue to work
+- ✅ All current settings preserved
+- ✅ Default provider set to 'ollama'
+- ✅ Legacy `ollama-client.php` still included
+- ✅ Database migrations run automatically
+- ✅ No manual intervention required
+
+### Migration Notes
+- Plugin automatically creates new database tables on activation
+- Existing Ollama configuration migrated to new provider system
+- No data loss during upgrade
+- Settings UI updated with provider selector
+- Old settings remain accessible
+
+### Known Limitations
+- OpenRouter model list cached for 1 hour (to avoid rate limits)
+- OpenAI/Claude require paid API keys
+- Budget alerts require manual configuration
+- Cost tracking depends on provider API responses
+
+### Developer Notes
+- Provider system is extensible - custom providers can be registered
+- Use `ai_moderator_register_providers` action to add providers
+- See `ai-provider-interface.php` for implementation guide
+- Factory pattern used for provider instantiation
+- Providers are cached per request for performance
+
+### Next Steps (Phase 2)
+Coming in v2.1.0:
+- Settings UI redesign with provider-specific sections
+- Advanced prompt variables (sentiment, site_context, user_history)
+- Prompt templates library
+- Multi-model consensus improvements
+- Context analyzer for better decisions
+
 ## [1.0.6] - 2025-01-13
 
 ### Fixed

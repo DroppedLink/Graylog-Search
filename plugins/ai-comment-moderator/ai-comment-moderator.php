@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: AI Comment Moderator
- * Description: AI-powered comment moderation using Ollama with configurable prompts, batch processing, and multi-site management
- * Version: 1.0.6
+ * Description: Multi-provider AI comment moderation (Ollama, OpenAI, Claude, OpenRouter) with advanced features
+ * Version: 2.0.0
  * Author: CSE
  */
 
@@ -11,12 +11,19 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('AI_COMMENT_MODERATOR_VERSION', '1.0.6');
+define('AI_COMMENT_MODERATOR_VERSION', '2.0.0');
 define('AI_COMMENT_MODERATOR_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AI_COMMENT_MODERATOR_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 // Include required files (order matters - dependencies first)
+// Provider system
+require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/providers/ai-provider-interface.php';
+require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/ai-provider-factory.php';
+
+// Legacy ollama-client for backward compatibility (will be deprecated)
 require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/ollama-client.php';
+
+// Core includes
 require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/reputation-manager.php';
 require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/webhook-handler.php';
 require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/remote-site-manager.php';
@@ -40,8 +47,31 @@ function ai_comment_moderator_activate() {
     
     // Set default options (only if they don't exist)
     // add_option will not overwrite existing values
+    
+    // Provider settings
+    add_option('ai_comment_moderator_active_provider', 'ollama'); // Default to Ollama
+    
+    // Ollama settings (legacy/backward compat)
     add_option('ai_comment_moderator_ollama_url', 'http://localhost:11434');
     add_option('ai_comment_moderator_ollama_model', '');
+    
+    // OpenAI settings
+    add_option('ai_comment_moderator_openai_api_key', '');
+    add_option('ai_comment_moderator_openai_model', 'gpt-3.5-turbo');
+    add_option('ai_comment_moderator_openai_budget_alert', '10');
+    
+    // Claude settings
+    add_option('ai_comment_moderator_claude_api_key', '');
+    add_option('ai_comment_moderator_claude_model', 'claude-3-haiku-20240307');
+    add_option('ai_comment_moderator_claude_budget_alert', '10');
+    
+    // OpenRouter settings
+    add_option('ai_comment_moderator_openrouter_api_key', '');
+    add_option('ai_comment_moderator_openrouter_model', 'openai/gpt-3.5-turbo');
+    add_option('ai_comment_moderator_openrouter_fallbacks', '');
+    add_option('ai_comment_moderator_openrouter_budget_alert', '10');
+    
+    // General settings
     add_option('ai_comment_moderator_batch_size', '10');
     add_option('ai_comment_moderator_auto_process', '0');
     add_option('ai_comment_moderator_rate_limit', '5');
@@ -53,6 +83,7 @@ function ai_comment_moderator_activate() {
     add_option('ai_comment_moderator_webhook_events', 'toxic,spam_high');
     add_option('ai_comment_moderator_keep_data_on_uninstall', '1'); // Default to keeping data
     add_option('ai_comment_moderator_github_token', ''); // For GitHub updates
+    add_option('ai_comment_moderator_sync_pages_per_batch', '10'); // Remote site sync batch size
     
     // Create default prompts (only if none exist)
     ai_comment_moderator_create_default_prompts();
@@ -90,10 +121,35 @@ function ai_comment_moderator_uninstall() {
     $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}ai_webhook_log");
     $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}ai_remote_sites");
     $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}ai_remote_comments");
+    $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}ai_provider_usage");
+    $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}ai_corrections");
+    $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}ai_notifications");
     
     // Delete all options
+    // Provider settings
+    delete_option('ai_comment_moderator_active_provider');
+    
+    // Ollama settings
     delete_option('ai_comment_moderator_ollama_url');
     delete_option('ai_comment_moderator_ollama_model');
+    
+    // OpenAI settings
+    delete_option('ai_comment_moderator_openai_api_key');
+    delete_option('ai_comment_moderator_openai_model');
+    delete_option('ai_comment_moderator_openai_budget_alert');
+    
+    // Claude settings
+    delete_option('ai_comment_moderator_claude_api_key');
+    delete_option('ai_comment_moderator_claude_model');
+    delete_option('ai_comment_moderator_claude_budget_alert');
+    
+    // OpenRouter settings
+    delete_option('ai_comment_moderator_openrouter_api_key');
+    delete_option('ai_comment_moderator_openrouter_model');
+    delete_option('ai_comment_moderator_openrouter_fallbacks');
+    delete_option('ai_comment_moderator_openrouter_budget_alert');
+    
+    // General settings
     delete_option('ai_comment_moderator_batch_size');
     delete_option('ai_comment_moderator_auto_process');
     delete_option('ai_comment_moderator_rate_limit');
@@ -104,6 +160,11 @@ function ai_comment_moderator_uninstall() {
     delete_option('ai_comment_moderator_webhook_url');
     delete_option('ai_comment_moderator_webhook_events');
     delete_option('ai_comment_moderator_keep_data_on_uninstall');
+    delete_option('ai_comment_moderator_github_token');
+    delete_option('ai_comment_moderator_sync_pages_per_batch');
+    
+    // Clean up transients
+    delete_transient('ai_moderator_openrouter_models');
 }
 
 // Create database tables
@@ -264,6 +325,56 @@ function ai_comment_moderator_create_tables() {
         KEY synced_back (synced_back)
     ) $charset_collate;";
     
+    // Table for AI provider usage tracking (costs & tokens)
+    $table_provider_usage = $wpdb->prefix . 'ai_provider_usage';
+    $sql_provider_usage = "CREATE TABLE $table_provider_usage (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        provider varchar(50) NOT NULL,
+        model varchar(100) NOT NULL,
+        tokens_used int(11) DEFAULT 0,
+        cost_usd decimal(10,6) DEFAULT 0,
+        comments_processed int(11) DEFAULT 0,
+        date date NOT NULL,
+        created_at datetime DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY provider_date (provider, date),
+        KEY date (date)
+    ) $charset_collate;";
+    
+    // Table for correction tracking (admin overrides)
+    $table_corrections = $wpdb->prefix . 'ai_corrections';
+    $sql_corrections = "CREATE TABLE $table_corrections (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        comment_id bigint(20) NOT NULL,
+        ai_decision varchar(20) NOT NULL,
+        admin_decision varchar(20) NOT NULL,
+        provider varchar(50) NOT NULL,
+        model varchar(100) NOT NULL,
+        confidence int(11) NOT NULL,
+        corrected_at datetime DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY comment_id (comment_id),
+        KEY corrected_at (corrected_at),
+        KEY provider (provider)
+    ) $charset_collate;";
+    
+    // Table for notification queue
+    $table_notifications = $wpdb->prefix . 'ai_notifications';
+    $sql_notifications = "CREATE TABLE $table_notifications (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        type varchar(50) NOT NULL,
+        recipient varchar(255) NOT NULL,
+        subject text,
+        message text NOT NULL,
+        status varchar(20) DEFAULT 'pending',
+        sent_at datetime DEFAULT NULL,
+        created_at datetime DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY status (status),
+        KEY type (type),
+        KEY created_at (created_at)
+    ) $charset_collate;";
+    
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql_reviews);
     dbDelta($sql_prompts);
@@ -273,6 +384,9 @@ function ai_comment_moderator_create_tables() {
     dbDelta($sql_webhooks);
     dbDelta($sql_remote_sites);
     dbDelta($sql_remote_comments);
+    dbDelta($sql_provider_usage);
+    dbDelta($sql_corrections);
+    dbDelta($sql_notifications);
 }
 
 // Create default prompts
