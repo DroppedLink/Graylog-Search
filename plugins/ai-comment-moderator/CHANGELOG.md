@@ -5,6 +5,48 @@ All notable changes to AI Comment Moderator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-01-15
+
+### Added
+- **Settings UI Complete**: Fully functional multi-provider settings interface
+  - Provider selection dropdown (Ollama, OpenAI, Claude, OpenRouter)
+  - Dynamic settings sections that show/hide based on selected provider
+  - Connection test buttons for each provider with real-time feedback
+  - Model selection dropdowns (auto-populated via API)
+  - Budget alert configuration for paid providers
+  - Cost estimates shown per model
+
+### Improved
+- **AJAX Handlers**: New unified `ai_moderator_test_provider` endpoint
+  - Tests any provider without saving settings
+  - Automatically encrypts API keys during testing
+  - Returns models list for Ollama and OpenRouter
+  - Validates OpenAI and Claude connections
+  - Restores original settings after test
+- **JavaScript**: Provider switcher with smooth transitions
+  - Dynamic form sections for each provider
+  - Real-time connection testing
+  - Model dropdown population
+  - Error handling and user feedback
+- **Encryption**: Consistent API key encryption across all providers
+  - Uses WordPress AUTH_KEY for encryption
+  - Base64 encoding with MD5 hash validation
+  - Keys never stored in plain text
+
+### Technical
+- Settings page completely refactored for multi-provider support
+- 200+ lines of new JavaScript for dynamic UI
+- AJAX handler supports all 4 providers
+- Temporary settings during testing don't persist
+- Provider factory cache management for testing
+
+### User Experience
+- Clear provider selection with descriptive names
+- Cost estimates help users choose models
+- Budget alerts prevent overspending
+- Connection tests work before saving
+- Better error messages with actionable guidance
+
 ## [2.0.0] - 2025-01-15
 
 ### 🎉 MAJOR RELEASE - Multi-Provider AI Support

@@ -180,21 +180,37 @@ function ai_comment_moderator_settings_page() {
             update_option('ai_comment_moderator_ollama_model', sanitize_text_field($_POST['ollama_model']));
         } elseif ($active_provider === 'openai') {
             if (!empty($_POST['openai_api_key'])) {
-                $encrypted_key = AI_OpenAI_Provider_Encrypt_Helper::encrypt($_POST['openai_api_key']);
+                // Simple encryption using WordPress AUTH_KEY
+                $api_key = sanitize_text_field($_POST['openai_api_key']);
+                if (defined('AUTH_KEY') && AUTH_KEY) {
+                    $encrypted_key = base64_encode($api_key . '::' . md5(AUTH_KEY));
+                } else {
+                    $encrypted_key = base64_encode($api_key);
+                }
                 update_option('ai_comment_moderator_openai_api_key', $encrypted_key);
             }
             update_option('ai_comment_moderator_openai_model', sanitize_text_field($_POST['openai_model']));
             update_option('ai_comment_moderator_openai_budget_alert', floatval($_POST['openai_budget_alert']));
         } elseif ($active_provider === 'claude') {
             if (!empty($_POST['claude_api_key'])) {
-                $encrypted_key = AI_Claude_Provider_Encrypt_Helper::encrypt($_POST['claude_api_key']);
+                $api_key = sanitize_text_field($_POST['claude_api_key']);
+                if (defined('AUTH_KEY') && AUTH_KEY) {
+                    $encrypted_key = base64_encode($api_key . '::' . md5(AUTH_KEY));
+                } else {
+                    $encrypted_key = base64_encode($api_key);
+                }
                 update_option('ai_comment_moderator_claude_api_key', $encrypted_key);
             }
             update_option('ai_comment_moderator_claude_model', sanitize_text_field($_POST['claude_model']));
             update_option('ai_comment_moderator_claude_budget_alert', floatval($_POST['claude_budget_alert']));
         } elseif ($active_provider === 'openrouter') {
             if (!empty($_POST['openrouter_api_key'])) {
-                $encrypted_key = AI_OpenRouter_Provider_Encrypt_Helper::encrypt($_POST['openrouter_api_key']);
+                $api_key = sanitize_text_field($_POST['openrouter_api_key']);
+                if (defined('AUTH_KEY') && AUTH_KEY) {
+                    $encrypted_key = base64_encode($api_key . '::' . md5(AUTH_KEY));
+                } else {
+                    $encrypted_key = base64_encode($api_key);
+                }
                 update_option('ai_comment_moderator_openrouter_api_key', $encrypted_key);
             }
             update_option('ai_comment_moderator_openrouter_model', sanitize_text_field($_POST['openrouter_model']));
@@ -227,12 +243,24 @@ function ai_comment_moderator_settings_page() {
         }
     }
     
+    // Get all current settings
+    $active_provider = get_option('ai_comment_moderator_active_provider', 'ollama');
     $ollama_url = get_option('ai_comment_moderator_ollama_url', 'http://localhost:11434');
     $ollama_model = get_option('ai_comment_moderator_ollama_model', '');
+    $openai_model = get_option('ai_comment_moderator_openai_model', 'gpt-3.5-turbo');
+    $openai_budget = get_option('ai_comment_moderator_openai_budget_alert', '10');
+    $claude_model = get_option('ai_comment_moderator_claude_model', 'claude-3-haiku-20240307');
+    $claude_budget = get_option('ai_comment_moderator_claude_budget_alert', '10');
+    $openrouter_model = get_option('ai_comment_moderator_openrouter_model', 'openai/gpt-3.5-turbo');
+    $openrouter_fallbacks = get_option('ai_comment_moderator_openrouter_fallbacks', '');
+    $openrouter_budget = get_option('ai_comment_moderator_openrouter_budget_alert', '10');
     $batch_size = get_option('ai_comment_moderator_batch_size', '10');
     $auto_process = get_option('ai_comment_moderator_auto_process', '0');
     $rate_limit = get_option('ai_comment_moderator_rate_limit', '5');
     $keep_data = get_option('ai_comment_moderator_keep_data_on_uninstall', '1');
+    
+    // Get available providers
+    $available_providers = AI_Provider_Factory::get_available_providers();
     
     ?>
     <div class="wrap">
@@ -243,31 +271,166 @@ function ai_comment_moderator_settings_page() {
         <form method="post" action="">
             <?php wp_nonce_field('ai_moderator_settings_nonce'); ?>
             
+            <h2>🤖 AI Provider</h2>
             <table class="form-table">
                 <tr>
-                    <th scope="row">Ollama URL</th>
+                    <th scope="row">Active Provider</th>
                     <td>
-                        <input type="url" name="ollama_url" id="ollama_url" value="<?php echo esc_attr($ollama_url); ?>" class="regular-text" required />
-                        <button type="button" id="test-ollama-connection" class="button">Test Connection & Load Models</button>
-                        <span id="connection-status"></span>
-                        <p class="description">The URL where your Ollama instance is running (e.g., http://localhost:11434)</p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">Ollama Model</th>
-                    <td>
-                        <select name="ollama_model" id="ollama_model" class="regular-text">
-                            <option value="">Select a model...</option>
-                            <?php 
-                            // Show currently saved model if available
-                            if ($ollama_model) {
-                                echo '<option value="' . esc_attr($ollama_model) . '" selected>' . esc_html($ollama_model) . '</option>';
-                            }
-                            ?>
+                        <select name="active_provider" id="active_provider" class="regular-text">
+                            <?php foreach ($available_providers as $key => $provider): ?>
+                                <option value="<?php echo esc_attr($key); ?>" <?php selected($active_provider, $key); ?>>
+                                    <?php echo esc_html($provider['display_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
-                        <p class="description">Select the AI model to use for comment moderation</p>
+                        <p class="description">Choose which AI provider to use for comment moderation</p>
                     </td>
                 </tr>
+            </table>
+            
+            <!-- Ollama Settings -->
+            <div id="provider-settings-ollama" class="provider-settings" style="display: <?php echo $active_provider === 'ollama' ? 'block' : 'none'; ?>;">
+                <h2>Ollama Configuration</h2>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Ollama URL</th>
+                        <td>
+                            <input type="url" name="ollama_url" id="ollama_url" value="<?php echo esc_attr($ollama_url); ?>" class="regular-text" />
+                            <button type="button" id="test-ollama-connection" class="button">Test Connection & Load Models</button>
+                            <span id="ollama-connection-status"></span>
+                            <p class="description">URL where your Ollama instance is running (e.g., http://localhost:11434)</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Ollama Model</th>
+                        <td>
+                            <select name="ollama_model" id="ollama_model" class="regular-text">
+                                <option value="">Select a model...</option>
+                                <?php if ($ollama_model): ?>
+                                    <option value="<?php echo esc_attr($ollama_model); ?>" selected><?php echo esc_html($ollama_model); ?></option>
+                                <?php endif; ?>
+                            </select>
+                            <p class="description">Select the AI model to use. Cost: $0 (self-hosted)</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- OpenAI Settings -->
+            <div id="provider-settings-openai" class="provider-settings" style="display: <?php echo $active_provider === 'openai' ? 'block' : 'none'; ?>;">
+                <h2>OpenAI Configuration</h2>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">API Key</th>
+                        <td>
+                            <input type="password" name="openai_api_key" id="openai_api_key" class="regular-text" placeholder="sk-..." />
+                            <button type="button" id="test-openai-connection" class="button">Test Connection & Load Models</button>
+                            <span id="openai-connection-status"></span>
+                            <p class="description">Your OpenAI API key (starts with sk-). Get one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></p>
+                            <p class="description"><strong>Note:</strong> Leave blank to keep existing key. API keys are encrypted.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Model</th>
+                        <td>
+                            <select name="openai_model" id="openai_model" class="regular-text">
+                                <option value="gpt-3.5-turbo" <?php selected($openai_model, 'gpt-3.5-turbo'); ?>>GPT-3.5 Turbo (~$0.001/comment)</option>
+                                <option value="gpt-4" <?php selected($openai_model, 'gpt-4'); ?>>GPT-4 (~$0.05/comment)</option>
+                                <option value="gpt-4-turbo" <?php selected($openai_model, 'gpt-4-turbo'); ?>>GPT-4 Turbo (~$0.02/comment)</option>
+                                <option value="gpt-4o" <?php selected($openai_model, 'gpt-4o'); ?>>GPT-4o (~$0.01/comment)</option>
+                            </select>
+                            <p class="description">Select GPT model. Prices are estimates.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Monthly Budget Alert (USD)</th>
+                        <td>
+                            <input type="number" name="openai_budget_alert" value="<?php echo esc_attr($openai_budget); ?>" min="1" step="0.01" class="small-text" />
+                            <p class="description">Receive alert when monthly spending exceeds this amount</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Claude Settings -->
+            <div id="provider-settings-claude" class="provider-settings" style="display: <?php echo $active_provider === 'claude' ? 'block' : 'none'; ?>;">
+                <h2>Claude (Anthropic) Configuration</h2>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">API Key</th>
+                        <td>
+                            <input type="password" name="claude_api_key" id="claude_api_key" class="regular-text" placeholder="sk-ant-..." />
+                            <button type="button" id="test-claude-connection" class="button">Test Connection</button>
+                            <span id="claude-connection-status"></span>
+                            <p class="description">Your Anthropic API key (starts with sk-ant-). Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></p>
+                            <p class="description"><strong>Note:</strong> Leave blank to keep existing key. API keys are encrypted.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Model</th>
+                        <td>
+                            <select name="claude_model" id="claude_model" class="regular-text">
+                                <option value="claude-3-haiku-20240307" <?php selected($claude_model, 'claude-3-haiku-20240307'); ?>>Claude 3 Haiku (~$0.0005/comment - fastest)</option>
+                                <option value="claude-3-sonnet-20240229" <?php selected($claude_model, 'claude-3-sonnet-20240229'); ?>>Claude 3 Sonnet (~$0.005/comment)</option>
+                                <option value="claude-3-5-sonnet-20240620" <?php selected($claude_model, 'claude-3-5-sonnet-20240620'); ?>>Claude 3.5 Sonnet (~$0.005/comment)</option>
+                                <option value="claude-3-opus-20240229" <?php selected($claude_model, 'claude-3-opus-20240229'); ?>>Claude 3 Opus (~$0.02/comment - most capable)</option>
+                            </select>
+                            <p class="description">Select Claude model. Haiku is fastest and cheapest.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Monthly Budget Alert (USD)</th>
+                        <td>
+                            <input type="number" name="claude_budget_alert" value="<?php echo esc_attr($claude_budget); ?>" min="1" step="0.01" class="small-text" />
+                            <p class="description">Receive alert when monthly spending exceeds this amount</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- OpenRouter Settings -->
+            <div id="provider-settings-openrouter" class="provider-settings" style="display: <?php echo $active_provider === 'openrouter' ? 'block' : 'none'; ?>;">
+                <h2>OpenRouter Configuration</h2>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">API Key</th>
+                        <td>
+                            <input type="password" name="openrouter_api_key" id="openrouter_api_key" class="regular-text" />
+                            <button type="button" id="test-openrouter-connection" class="button">Test Connection & Load Models</button>
+                            <span id="openrouter-connection-status"></span>
+                            <p class="description">Your OpenRouter API key. Get one at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></p>
+                            <p class="description"><strong>Note:</strong> Leave blank to keep existing key. API keys are encrypted.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Primary Model</th>
+                        <td>
+                            <select name="openrouter_model" id="openrouter_model" class="regular-text">
+                                <option value="<?php echo esc_attr($openrouter_model); ?>" selected><?php echo esc_html($openrouter_model); ?></option>
+                            </select>
+                            <button type="button" id="refresh-openrouter-models" class="button">Refresh Models</button>
+                            <p class="description">Select from 100+ models. Click Test Connection to load models.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Fallback Models</th>
+                        <td>
+                            <input type="text" name="openrouter_fallbacks" value="<?php echo esc_attr($openrouter_fallbacks); ?>" class="regular-text" placeholder="anthropic/claude-3-haiku,meta-llama/llama-3-8b" />
+                            <p class="description">Comma-separated list of model IDs to try if primary fails (automatic fallback)</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Monthly Budget Alert (USD)</th>
+                        <td>
+                            <input type="number" name="openrouter_budget_alert" value="<?php echo esc_attr($openrouter_budget); ?>" min="1" step="0.01" class="small-text" />
+                            <p class="description">Receive alert when monthly spending exceeds this amount</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            
+            <h2>General Settings</h2>
+            <table class="form-table">
                 <tr>
                     <th scope="row">Batch Size</th>
                     <td>
@@ -288,7 +451,7 @@ function ai_comment_moderator_settings_page() {
                     <th scope="row">Rate Limit</th>
                     <td>
                         <input type="number" name="rate_limit" value="<?php echo esc_attr($rate_limit); ?>" min="1" max="60" class="small-text" />
-                        <p class="description">Maximum API requests per minute to prevent overloading Ollama</p>
+                        <p class="description">Maximum API requests per minute</p>
                     </td>
                 </tr>
             </table>
@@ -355,34 +518,37 @@ function ai_comment_moderator_settings_page() {
     
     <script>
     jQuery(document).ready(function($) {
-        var currentModel = '<?php echo esc_js($ollama_model); ?>';
+        // Provider switching
+        $('#active_provider').on('change', function() {
+            var provider = $(this).val();
+            $('.provider-settings').hide();
+            $('#provider-settings-' + provider).show();
+        });
         
-        // Test connection button handler
+        // Ollama connection test
         $('#test-ollama-connection').on('click', function() {
             var $button = $(this);
-            var $status = $('#connection-status');
+            var $status = $('#ollama-connection-status');
             var $modelSelect = $('#ollama_model');
             var ollamaUrl = $('#ollama_url').val();
+            var currentModel = '<?php echo esc_js($ollama_model); ?>';
             
             if (!ollamaUrl) {
-                $status.html('<span style="color: #dc3232; margin-left: 10px;">⚠ Please enter an Ollama URL first</span>');
+                $status.html('<span style="color: #dc3232; margin-left: 10px;">⚠ Please enter a URL first</span>');
                 return;
             }
             
-            // Update button state
             $button.prop('disabled', true).text('Testing...');
             $status.html('<span style="color: #666; margin-left: 10px;">⏳ Connecting...</span>');
             
-            // Make AJAX request
             $.post(ajaxurl, {
-                action: 'ai_moderator_get_models',
+                action: 'ai_moderator_test_provider',
                 nonce: '<?php echo wp_create_nonce('ai_comment_moderator_nonce'); ?>',
+                provider: 'ollama',
                 ollama_url: ollamaUrl
             }, function(response) {
                 if (response.success && response.data.models) {
                     var models = response.data.models;
-                    
-                    // Clear and populate dropdown
                     $modelSelect.empty().append('<option value="">Select a model...</option>');
                     
                     $.each(models, function(index, model) {
@@ -390,33 +556,127 @@ function ai_comment_moderator_settings_page() {
                         $modelSelect.append('<option value="' + model + '"' + selected + '>' + model + '</option>');
                     });
                     
-                    // Update status
                     $status.html('<span style="color: #46b450; margin-left: 10px;">✓ Found ' + models.length + ' models!</span>');
-                    
-                    // Fade out success message after 5 seconds
-                    setTimeout(function() {
-                        $status.fadeOut(400, function() {
-                            $(this).html('').show();
-                        });
-                    }, 5000);
+                    setTimeout(function() { $status.fadeOut(400, function() { $(this).html('').show(); }); }, 5000);
                 } else {
-                    var errorMsg = response.data || 'Failed to load models';
-                    $status.html('<span style="color: #dc3232; margin-left: 10px;">✗ ' + errorMsg + '</span>');
+                    $status.html('<span style="color: #dc3232; margin-left: 10px;">✗ ' + (response.data || 'Connection failed') + '</span>');
                 }
-            }).fail(function(xhr, status, error) {
-                $status.html('<span style="color: #dc3232; margin-left: 10px;">✗ Network error: ' + error + '</span>');
+            }).fail(function() {
+                $status.html('<span style="color: #dc3232; margin-left: 10px;">✗ Network error</span>');
             }).always(function() {
                 $button.prop('disabled', false).text('Test Connection & Load Models');
             });
         });
         
-        // Auto-test on page load if URL exists and no models loaded
-        if (currentModel && $('#ollama_model option').length <= 1) {
-            // Give it a moment for the page to load
-            setTimeout(function() {
-                $('#test-ollama-connection').trigger('click');
-            }, 500);
-        }
+        // OpenAI connection test
+        $('#test-openai-connection').on('click', function() {
+            var $button = $(this);
+            var $status = $('#openai-connection-status');
+            var apiKey = $('#openai_api_key').val();
+            
+            if (!apiKey) {
+                $status.html('<span style="color: #dc3232; margin-left: 10px;">⚠ Please enter an API key first</span>');
+                return;
+            }
+            
+            $button.prop('disabled', true).text('Testing...');
+            $status.html('<span style="color: #666; margin-left: 10px;">⏳ Connecting...</span>');
+            
+            $.post(ajaxurl, {
+                action: 'ai_moderator_test_provider',
+                nonce: '<?php echo wp_create_nonce('ai_comment_moderator_nonce'); ?>',
+                provider: 'openai',
+                api_key: apiKey
+            }, function(response) {
+                if (response.success) {
+                    $status.html('<span style="color: #46b450; margin-left: 10px;">✓ Connection successful!</span>');
+                    setTimeout(function() { $status.fadeOut(400, function() { $(this).html('').show(); }); }, 5000);
+                } else {
+                    $status.html('<span style="color: #dc3232; margin-left: 10px;">✗ ' + (response.data || 'Connection failed') + '</span>');
+                }
+            }).fail(function() {
+                $status.html('<span style="color: #dc3232; margin-left: 10px;">✗ Network error</span>');
+            }).always(function() {
+                $button.prop('disabled', false).text('Test Connection & Load Models');
+            });
+        });
+        
+        // Claude connection test
+        $('#test-claude-connection').on('click', function() {
+            var $button = $(this);
+            var $status = $('#claude-connection-status');
+            var apiKey = $('#claude_api_key').val();
+            
+            if (!apiKey) {
+                $status.html('<span style="color: #dc3232; margin-left: 10px;">⚠ Please enter an API key first</span>');
+                return;
+            }
+            
+            $button.prop('disabled', true).text('Testing...');
+            $status.html('<span style="color: #666; margin-left: 10px;">⏳ Connecting...</span>');
+            
+            $.post(ajaxurl, {
+                action: 'ai_moderator_test_provider',
+                nonce: '<?php echo wp_create_nonce('ai_comment_moderator_nonce'); ?>',
+                provider: 'claude',
+                api_key: apiKey
+            }, function(response) {
+                if (response.success) {
+                    $status.html('<span style="color: #46b450; margin-left: 10px;">✓ Connection successful!</span>');
+                    setTimeout(function() { $status.fadeOut(400, function() { $(this).html('').show(); }); }, 5000);
+                } else {
+                    $status.html('<span style="color: #dc3232; margin-left: 10px;">✗ ' + (response.data || 'Connection failed') + '</span>');
+                }
+            }).fail(function() {
+                $status.html('<span style="color: #dc3232; margin-left: 10px;">✗ Network error</span>');
+            }).always(function() {
+                $button.prop('disabled', false).text('Test Connection');
+            });
+        });
+        
+        // OpenRouter connection test
+        $('#test-openrouter-connection').on('click', function() {
+            var $button = $(this);
+            var $status = $('#openrouter-connection-status');
+            var $modelSelect = $('#openrouter_model');
+            var apiKey = $('#openrouter_api_key').val();
+            var currentModel = '<?php echo esc_js($openrouter_model); ?>';
+            
+            if (!apiKey) {
+                $status.html('<span style="color: #dc3232; margin-left: 10px;">⚠ Please enter an API key first</span>');
+                return;
+            }
+            
+            $button.prop('disabled', true).text('Testing...');
+            $status.html('<span style="color: #666; margin-left: 10px;">⏳ Connecting & loading models...</span>');
+            
+            $.post(ajaxurl, {
+                action: 'ai_moderator_test_provider',
+                nonce: '<?php echo wp_create_nonce('ai_comment_moderator_nonce'); ?>',
+                provider: 'openrouter',
+                api_key: apiKey
+            }, function(response) {
+                if (response.success && response.data.models) {
+                    var models = response.data.models;
+                    $modelSelect.empty();
+                    
+                    $.each(models, function(index, model) {
+                        var selected = (model.id === currentModel) ? ' selected' : '';
+                        var displayName = model.name || model.id;
+                        $modelSelect.append('<option value="' + model.id + '"' + selected + '>' + displayName + '</option>');
+                    });
+                    
+                    $status.html('<span style="color: #46b450; margin-left: 10px;">✓ Found ' + models.length + ' models!</span>');
+                    setTimeout(function() { $status.fadeOut(400, function() { $(this).html('').show(); }); }, 5000);
+                } else {
+                    $status.html('<span style="color: #dc3232; margin-left: 10px;">✗ ' + (response.data || 'Connection failed') + '</span>');
+                }
+            }).fail(function() {
+                $status.html('<span style="color: #dc3232; margin-left: 10px;">✗ Network error</span>');
+            }).always(function() {
+                $button.prop('disabled', false).text('Test Connection & Load Models');
+            });
+        });
     });
     </script>
     <?php

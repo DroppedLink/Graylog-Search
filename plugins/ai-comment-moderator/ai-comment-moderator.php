@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AI Comment Moderator
  * Description: Multi-provider AI comment moderation (Ollama, OpenAI, Claude, OpenRouter) with advanced features
- * Version: 2.0.0
+ * Version: 2.0.1
  * Author: CSE
  */
 
@@ -11,7 +11,7 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('AI_COMMENT_MODERATOR_VERSION', '2.0.0');
+define('AI_COMMENT_MODERATOR_VERSION', '2.0.1');
 define('AI_COMMENT_MODERATOR_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AI_COMMENT_MODERATOR_PLUGIN_URL', plugin_dir_url(__FILE__));
 

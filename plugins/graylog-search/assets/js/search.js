@@ -28,16 +28,35 @@ jQuery(document).ready(function($) {
     loadRecentSearches();
     loadQuickFilters();
     
+    // Debounce timer for search-as-you-type
+    var debounceTimer = null;
+    
     // Handle search form submission - Admin interface
     $('#graylog-search-form').on('submit', function(e) {
         e.preventDefault();
+        clearTimeout(debounceTimer);
         performSearch($(this), 'admin');
     });
     
     // Handle search form submission - Shortcode interface
     $('.graylog-search-shortcode').on('submit', '.graylog-search-form', function(e) {
         e.preventDefault();
+        clearTimeout(debounceTimer);
         performSearch($(this), 'shortcode');
+    });
+    
+    // Optional: Auto-search on input change (debounced)
+    $('#search_terms, #search_fqdn, .search-terms, .search-fqdn').on('input', function() {
+        // Only if enabled (not enabled by default to avoid unwanted API calls)
+        if (window.graylogAutoSearchEnabled) {
+            clearTimeout(debounceTimer);
+            var $form = $(this).closest('form');
+            var interfaceType = $form.attr('id') === 'graylog-search-form' ? 'admin' : 'shortcode';
+            
+            debounceTimer = setTimeout(function() {
+                performSearch($form, interfaceType);
+            }, 300);
+        }
     });
     
     // Perform search function

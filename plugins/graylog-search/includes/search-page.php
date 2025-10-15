@@ -24,7 +24,9 @@ function graylog_search_page() {
     }
     ?>
     <div class="wrap graylog-search-wrap">
-        <h1>Graylog Log Search</h1>
+        <h1>Graylog Log Search <span id="connection-status" class="connection-status" title="API Connection Status">
+            <span class="status-dot status-unknown">●</span>
+        </span></h1>
         
         <!-- Quick Filters, Saved Searches, and Recent Searches -->
         <div class="graylog-search-helpers" style="display: flex; gap: 20px; margin-bottom: 20px;">

@@ -75,6 +75,94 @@ body.graylog-dark-mode {
     box-shadow: 0 4px 12px var(--graylog-shadow-strong);
 }
 
+/* Connection Status Indicator */
+.connection-status {
+    display: inline-block;
+    margin-left: 10px;
+    font-size: 12px;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.status-unknown {
+    color: #999;
+}
+
+.status-connected {
+    color: #46b450;
+}
+
+.status-warning {
+    color: #ffb900;
+}
+
+.status-error {
+    color: #dc3232;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Error Message Improvements */
+.graylog-error-container {
+    background: var(--graylog-error-bg);
+    border: 1px solid var(--graylog-error-border);
+    border-radius: 5px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.graylog-error-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.graylog-error-title {
+    color: var(--graylog-error-text);
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.graylog-error-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.graylog-error-message {
+    color: var(--graylog-error-text);
+    margin-bottom: 10px;
+}
+
+.graylog-error-details {
+    background: rgba(0,0,0,0.05);
+    padding: 10px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--graylog-text-secondary);
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+}
+
+.graylog-error-details.visible {
+    display: block;
+}
+
 .graylog-search-wrap {
     max-width: 1400px;
 }

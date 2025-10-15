@@ -18,6 +18,9 @@ class AI_Comment_Moderator_Ajax_Handler {
         add_action('wp_ajax_ai_moderator_test_connection', array($this, 'ajax_test_connection'));
         add_action('wp_ajax_ai_moderator_get_models', array($this, 'ajax_get_models'));
         
+        // Multi-provider testing (NEW for v2.0)
+        add_action('wp_ajax_ai_moderator_test_provider', array($this, 'ajax_test_provider'));
+        
         // Remote site connection testing
         add_action('wp_ajax_ai_moderator_test_remote_connection', array($this, 'ajax_test_remote_connection'));
         
@@ -36,6 +39,100 @@ class AI_Comment_Moderator_Ajax_Handler {
         // add_action('wp_ajax_ai_moderator_start_batch', array($this, 'ajax_start_batch'));
         // add_action('wp_ajax_ai_moderator_process_batch_chunk', array($this, 'ajax_process_batch_chunk'));
         // add_action('wp_ajax_ai_moderator_get_batch_status', array($this, 'ajax_get_batch_status'));
+    }
+    
+    /**
+     * Test provider connection (v2.0+)
+     * 
+     * Unified AJAX handler for testing any AI provider
+     */
+    public function ajax_test_provider() {
+        check_ajax_referer('ai_comment_moderator_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        $provider_name = sanitize_text_field($_POST['provider']);
+        
+        // Get provider instance
+        $provider = AI_Provider_Factory::get_provider($provider_name);
+        
+        if (!$provider) {
+            wp_send_json_error('Provider not found');
+        }
+        
+        // For Ollama, temporarily set the URL
+        if ($provider_name === 'ollama' && !empty($_POST['ollama_url'])) {
+            $ollama_url = sanitize_url($_POST['ollama_url']);
+            $original_url = get_option('ai_comment_moderator_ollama_url');
+            update_option('ai_comment_moderator_ollama_url', $ollama_url);
+        }
+        
+        // For other providers, temporarily set API key for testing
+        if ($provider_name === 'openai' && !empty($_POST['api_key'])) {
+            $api_key = sanitize_text_field($_POST['api_key']);
+            // Create temporary encrypted key
+            $encrypted = base64_encode($api_key . '::' . md5(defined('AUTH_KEY') ? AUTH_KEY : 'temp'));
+            $original_key = get_option('ai_comment_moderator_openai_api_key');
+            update_option('ai_comment_moderator_openai_api_key', $encrypted);
+        }
+        
+        if ($provider_name === 'claude' && !empty($_POST['api_key'])) {
+            $api_key = sanitize_text_field($_POST['api_key']);
+            $encrypted = base64_encode($api_key . '::' . md5(defined('AUTH_KEY') ? AUTH_KEY : 'temp'));
+            $original_key = get_option('ai_comment_moderator_claude_api_key');
+            update_option('ai_comment_moderator_claude_api_key', $encrypted);
+        }
+        
+        if ($provider_name === 'openrouter' && !empty($_POST['api_key'])) {
+            $api_key = sanitize_text_field($_POST['api_key']);
+            $encrypted = base64_encode($api_key . '::' . md5(defined('AUTH_KEY') ? AUTH_KEY : 'temp'));
+            $original_key = get_option('ai_comment_moderator_openrouter_api_key');
+            update_option('ai_comment_moderator_openrouter_api_key', $encrypted);
+        }
+        
+        // Re-instantiate provider with new settings
+        AI_Provider_Factory::clear_cache();
+        $provider = AI_Provider_Factory::get_provider($provider_name);
+        
+        // Test connection
+        $result = $provider->test_connection();
+        
+        // Get models if available
+        $models = null;
+        if ($result['success']) {
+            $models_result = $provider->get_models();
+            if ($models_result['success']) {
+                $models = $models_result['models'];
+            }
+        }
+        
+        // Restore original settings
+        if ($provider_name === 'ollama' && isset($original_url)) {
+            update_option('ai_comment_moderator_ollama_url', $original_url);
+        }
+        if (isset($original_key)) {
+            if ($provider_name === 'openai') {
+                update_option('ai_comment_moderator_openai_api_key', $original_key);
+            } elseif ($provider_name === 'claude') {
+                update_option('ai_comment_moderator_claude_api_key', $original_key);
+            } elseif ($provider_name === 'openrouter') {
+                update_option('ai_comment_moderator_openrouter_api_key', $original_key);
+            }
+        }
+        
+        // Clear cache again to reset to saved settings
+        AI_Provider_Factory::clear_cache();
+        
+        if ($result['success']) {
+            wp_send_json_success(array(
+                'message' => $result['message'],
+                'models' => $models
+            ));
+        } else {
+            wp_send_json_error($result['message']);
+        }
     }
     
     /**
