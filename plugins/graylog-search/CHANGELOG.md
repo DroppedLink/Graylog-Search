@@ -2,6 +2,55 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.7.1] - 2025-10-15 - PHASE 1 COMPLETE: Error Handling & Debouncing
+
+### Added - Better Error Handling
+- **Automatic Retry Logic**: Exponential backoff retry (1s, 2s, 4s) for failed requests
+  - Automatically retries on timeout or network errors
+  - Maximum 3 retry attempts
+  - User-friendly retry status messages
+- **Connection Status Indicator**: Real-time API connection status
+  - Green dot: Connected
+  - Yellow dot: Connecting/Warning
+  - Red dot: Error
+  - Gray dot: Unknown
+  - Shows in page header
+- **User-Friendly Error Messages**: Clear, actionable error descriptions
+  - Timeout errors
+  - Authentication errors (401/403)
+  - Not found errors (404)
+  - Server errors (500/502/503)
+  - Network connection errors
+- **Expandable Error Details**: Technical details for administrators
+  - HTTP status codes
+  - Response data
+  - Request status
+  - "Show Details" button
+- **Retry Button**: Manual retry option in error display
+- **Enhanced Error UI**: Improved visual design for error messages
+
+### Added - Debounced Search
+- **300ms Search Debouncing**: Reduces unnecessary API calls
+  - Delays search until user stops typing
+  - Prevents rapid-fire API requests
+  - Optional auto-search on input (disabled by default)
+  - Can be enabled with `window.graylogAutoSearchEnabled = true`
+
+### Changed
+- Enhanced error display with container, header, actions, and details
+- Improved AJAX error handling with timeout support
+- Connection status updates throughout search lifecycle
+
+### Technical
+- Updated `assets/js/search.js`: Retry logic, debouncing, status updates, enhanced errors
+- Updated `assets/css/style.css`: Connection status indicator, error UI styling
+- Updated `includes/search-page.php`: Connection status indicator in header
+
+### Performance Improvements
+- Debouncing reduces API calls for search-as-you-type scenarios
+- Retry logic improves reliability for unstable connections
+- Timeout handling prevents hanging requests
+
 ## [1.7.0] - 2025-10-15 - PHASE 1: Core Improvements & Performance
 
 ### Added - Performance Optimization

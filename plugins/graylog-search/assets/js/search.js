@@ -59,8 +59,12 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Perform search function
-    function performSearch($form, interfaceType) {
+    // Perform search function with retry logic
+    function performSearch($form, interfaceType, retryCount) {
+        retryCount = retryCount || 0;
+        var maxRetries = 3;
+        var retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+        
         var $container = interfaceType === 'admin' ? $('.graylog-search-wrap') : $form.closest('.graylog-search-shortcode');
         
         // Hide previous results/errors
@@ -69,6 +73,9 @@ jQuery(document).ready(function($) {
         
         // Show loading
         $container.find('.graylog-loading, #search-loading').show();
+        
+        // Update connection status
+        updateConnectionStatus('connecting');
         
         // Get form data based on interface type
         var formData = {
@@ -93,23 +100,103 @@ jQuery(document).ready(function($) {
             url: graylogSearch.ajaxUrl,
             type: 'POST',
             data: formData,
+            timeout: 30000,
             success: function(response) {
                 console.log('AJAX response:', response);
                 $container.find('.graylog-loading, #search-loading').hide();
                 
                 if (response.success) {
+                    updateConnectionStatus('connected');
                     displayResults(response.data, $container, interfaceType);
                 } else {
                     console.error('Search failed:', response);
-                    showError(response.data.message || 'Search failed', $container, interfaceType);
+                    updateConnectionStatus('error');
+                    showError(response.data.message || 'Search failed', $container, interfaceType, response.data);
                 }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX error:', xhr, status, error);
                 $container.find('.graylog-loading, #search-loading').hide();
-                showError('Network error: ' + error, $container, interfaceType);
+                
+                // Retry logic
+                if (retryCount < maxRetries && (status === 'timeout' || status === 'error')) {
+                    updateConnectionStatus('warning');
+                    var retryMessage = 'Connection issue. Retrying in ' + (retryDelay / 1000) + ' seconds... (Attempt ' + (retryCount + 1) + '/' + maxRetries + ')';
+                    showError(retryMessage, $container, interfaceType, null, true);
+                    
+                    setTimeout(function() {
+                        performSearch($form, interfaceType, retryCount + 1);
+                    }, retryDelay);
+                } else {
+                    updateConnectionStatus('error');
+                    var errorMessage = getUserFriendlyError(xhr, status, error);
+                    showError(errorMessage, $container, interfaceType, {
+                        xhr: xhr,
+                        status: status,
+                        error: error
+                    });
+                }
             }
         });
+    }
+    
+    // Update connection status indicator
+    function updateConnectionStatus(status) {
+        var $statusDot = $('#connection-status .status-dot');
+        if ($statusDot.length === 0) return;
+        
+        $statusDot.removeClass('status-unknown status-connected status-warning status-error status-connecting');
+        
+        switch(status) {
+            case 'connecting':
+                $statusDot.addClass('status-warning');
+                $statusDot.attr('title', 'Connecting to Graylog API...');
+                break;
+            case 'connected':
+                $statusDot.addClass('status-connected');
+                $statusDot.attr('title', 'Connected to Graylog API');
+                break;
+            case 'warning':
+                $statusDot.addClass('status-warning');
+                $statusDot.attr('title', 'Connection issues - Retrying...');
+                break;
+            case 'error':
+                $statusDot.addClass('status-error');
+                $statusDot.attr('title', 'Connection failed');
+                break;
+            default:
+                $statusDot.addClass('status-unknown');
+                $statusDot.attr('title', 'API Connection Status');
+        }
+    }
+    
+    // Get user-friendly error messages
+    function getUserFriendlyError(xhr, status, error) {
+        if (status === 'timeout') {
+            return 'The request timed out. The Graylog server may be slow or unreachable.';
+        }
+        
+        if (xhr.status === 0) {
+            return 'Cannot connect to the server. Please check your network connection and Graylog API URL.';
+        }
+        
+        if (xhr.status === 401 || xhr.status === 403) {
+            return 'Authentication failed. Please check your Graylog API token in Settings.';
+        }
+        
+        if (xhr.status === 404) {
+            return 'Graylog API endpoint not found. Please verify your API URL in Settings.';
+        }
+        
+        if (xhr.status === 500 || xhr.status === 502 || xhr.status === 503) {
+            return 'Graylog server error. The server may be experiencing issues.';
+        }
+        
+        if (xhr.status >= 400 && xhr.status < 500) {
+            return 'Request error: ' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : error);
+        }
+        
+        return 'An unexpected error occurred: ' + error;
     }
     
     // Handle clear button - Admin
@@ -783,14 +870,60 @@ jQuery(document).ready(function($) {
     }
     
     // Show error message
-    function showError(message, $container, interfaceType) {
+    function showError(message, $container, interfaceType, errorDetails, isRetrying) {
+        var errorHtml = '<div class="graylog-error-container">';
+        errorHtml += '<div class="graylog-error-header">';
+        errorHtml += '<div class="graylog-error-title">' + (isRetrying ? '⚠️ Connection Issue' : '❌ Error') + '</div>';
+        errorHtml += '<div class="graylog-error-actions">';
+        
+        if (errorDetails && !isRetrying) {
+            errorHtml += '<button class="button button-small show-error-details">Show Details</button>';
+            errorHtml += '<button class="button button-small retry-search">Retry</button>';
+        }
+        
+        errorHtml += '</div>';
+        errorHtml += '</div>';
+        errorHtml += '<div class="graylog-error-message">' + escapeHtml(message) + '</div>';
+        
+        if (errorDetails && !isRetrying) {
+            errorHtml += '<div class="graylog-error-details">';
+            errorHtml += '<strong>Technical Details:</strong><br>';
+            if (errorDetails.xhr) {
+                errorHtml += 'Status: ' + errorDetails.xhr.status + ' ' + errorDetails.xhr.statusText + '<br>';
+                errorHtml += 'Response: ' + escapeHtml(JSON.stringify(errorDetails.xhr.responseJSON || errorDetails.xhr.responseText || 'No response', null, 2)) + '<br>';
+            }
+            if (errorDetails.status) {
+                errorHtml += 'Request Status: ' + errorDetails.status + '<br>';
+            }
+            if (errorDetails.error) {
+                errorHtml += 'Error: ' + escapeHtml(errorDetails.error);
+            }
+            errorHtml += '</div>';
+        }
+        
+        errorHtml += '</div>';
+        
         if (interfaceType === 'admin') {
-            $('#error-message').text(message);
+            $('#error-message').html(errorHtml);
             $('#search-error').show();
         } else {
-            $container.find('.graylog-error-message').text(message).show();
+            $container.find('.graylog-error-message').html(errorHtml).show();
         }
     }
+    
+    // Toggle error details
+    $(document).on('click', '.show-error-details', function() {
+        var $details = $(this).closest('.graylog-error-container').find('.graylog-error-details');
+        $details.toggleClass('visible');
+        $(this).text($details.hasClass('visible') ? 'Hide Details' : 'Show Details');
+    });
+    
+    // Retry search button
+    $(document).on('click', '.retry-search', function() {
+        if (lastSearchData) {
+            performSearch(lastSearchData.form, lastSearchData.interfaceType, 0);
+        }
+    });
     
     // Escape HTML to prevent XSS
     function escapeHtml(text) {
@@ -1963,4 +2096,5 @@ jQuery(document).ready(function($) {
         });
     }
 });
+
 
