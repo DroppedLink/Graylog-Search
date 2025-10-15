@@ -1530,6 +1530,60 @@ jQuery(document).ready(function($) {
         showNotification('Exported ' + rows.length + ' rows as Text', 'success');
     });
     
+    // Export as PDF
+    $(document).on('click', '.export-pdf', function() {
+        var rows = getVisibleRowsData();
+        if (rows.length === 0) {
+            showNotification('No visible rows to export', 'warning');
+            return;
+        }
+        
+        showNotification('Generating PDF report...', 'info');
+        $('.export-menu').hide();
+        
+        // Get current filters
+        var filters = {
+            fqdn: $('#search_fqdn').val() || $('.search-fqdn').val(),
+            search_terms: $('#search_terms').val() || $('.search-terms').val(),
+            filter_out: $('#filter_out').val() || $('.filter-out').val(),
+            time_range: $('#time_range').val() || $('.time-range').val()
+        };
+        
+        $.ajax({
+            url: graylogSearch.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'graylog_export_pdf',
+                nonce: graylogSearch.nonce,
+                results: JSON.stringify(rows),
+                filters: JSON.stringify(filters),
+                include_logo: true,
+                include_filters: true,
+                include_summary: true
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Open PDF in new window for printing
+                    var pdfWindow = window.open('', '_blank');
+                    pdfWindow.document.write(response.data.html);
+                    pdfWindow.document.close();
+                    
+                    // Trigger print dialog
+                    setTimeout(function() {
+                        pdfWindow.print();
+                    }, 500);
+                    
+                    showNotification('PDF report generated! Use browser Print → Save as PDF', 'success');
+                } else {
+                    showNotification('PDF generation failed: ' + response.data.message, 'error');
+                }
+            },
+            error: function() {
+                showNotification('Error generating PDF', 'error');
+            }
+        });
+    });
+    
     // Copy to clipboard
     $(document).on('click', '.export-copy', function() {
         var rows = getVisibleRowsData();

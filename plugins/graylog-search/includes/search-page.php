@@ -188,6 +188,7 @@ function graylog_search_page() {
                             <span class="dashicons dashicons-download"></span> Export
                         </button>
                         <div class="export-menu" style="display: none;">
+                            <button class="export-pdf">📄 PDF Report</button>
                             <button class="export-csv">CSV</button>
                             <button class="export-json">JSON</button>
                             <button class="export-txt">Text</button>

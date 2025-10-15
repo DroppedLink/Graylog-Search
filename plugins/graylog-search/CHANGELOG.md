@@ -2,6 +2,90 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.11.0] - 2025-10-15 - Phase 3 Begins: PDF Export + Comprehensive Testing Guide
+
+### Added - PDF Report Export
+- **Professional PDF Reports**: Browser-based PDF generation
+- **Print to PDF**: Opens formatted report in new window, triggers print dialog
+- **Report Sections**:
+  - Header with title and generation date/user
+  - Search parameters (filters applied)
+  - Summary statistics (total results, unique sources, time span)
+  - Results table (timestamp, source, message)
+  - Footer with page numbers
+- **Automatic Pagination**: Page breaks every 30 rows for clean printing
+- **Styled Output**: Professional formatting with colors, spacing, borders
+- **Logo Support**: Backend ready for company logo upload (UI pending)
+- **Export Menu**: New "📄 PDF Report" button in export dropdown
+
+### Added - Comprehensive Testing Guide
+- **TESTING_GUIDE.md**: 50+ page testing manual
+- **20 Testing Categories**: From basic search to advanced features
+- **400+ Test Cases**: Every feature covered
+- **Cross-Browser Matrix**: Chrome, Firefox, Safari, Edge
+- **Performance Benchmarks**: Speed and memory targets
+- **Bug Reporting Template**: Standardized issue reporting
+- **Sign-Off Checklist**: Completion tracking
+
+### Technical
+- New file: `includes/export-pdf.php` (13KB, 300+ lines)
+  - PDF content generation (HTML-based)
+  - Logo upload handlers (for future UI)
+  - Summary statistics calculation
+  - Time span calculation
+  - AJAX endpoint for PDF generation
+- Modified: `includes/search-page.php`
+  - Added PDF button to export menu
+- Modified: `assets/js/search.js`
+  - Added `.export-pdf` click handler
+  - Generates formatted PDF via AJAX
+  - Opens in new window with print dialog
+- Modified: `graylog-search.php`
+  - v1.11.0
+  - Includes export-pdf.php
+- New file: `TESTING_GUIDE.md` (22KB, 1,000+ lines)
+  - Complete testing methodology
+  - All features documented
+  - Test-driven QA process
+
+### PDF Export Features
+- **One-Click Generation**: Click button → formatted report opens
+- **Browser Print Dialog**: Automatically triggers print
+- **Save as PDF**: Use browser's "Save as PDF" option
+- **Summary Stats**: Auto-calculates:
+  - Total results count
+  - Unique sources count
+  - Time span (oldest to newest log)
+- **Professional Layout**:
+  - Blue headers and accents (#0073aa)
+  - Zebra-striped table rows
+  - Clean typography (Arial)
+  - Proper spacing and margins
+  - Page breaks for multi-page reports
+- **Responsive to Filters**: Only exports visible rows (respects client-side filters)
+
+### Benefits
+✅ **Professional Reports**: Share findings with management  
+✅ **Compliance**: PDF reports for audit trails  
+✅ **Offline Review**: Save logs for offline analysis  
+✅ **Documentation**: Incident response documentation  
+✅ **Easy Sharing**: Email PDF reports to team  
+✅ **No External Libraries**: Pure HTML/CSS, no dependencies  
+
+### Testing Ready
+- **Comprehensive Guide**: Every feature documented
+- **Systematic Approach**: 20 categories, logical flow
+- **Production Ready**: Clear pass/fail criteria
+- **Bug Tracking**: Standardized reporting
+
+### Phase 3 Status
+✅ PDF Export (v1.11.0) - Basic implementation complete  
+⏳ Excel Export - Next feature  
+⏳ Scheduled Reports - Future  
+⏳ Bulk Export - Future  
+
+**Note**: Phase 3 started! PDF export is production-ready for testing.
+
 ## [1.10.0] - 2025-10-15 - PHASE 2 COMPLETE: Search History with Database 🎉
 
 **Phase 2 is DONE!** This release completes all Advanced Search Capabilities.

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Graylog Search
  * Description: Simple interface for non-technical users to search Graylog logs via API
- * Version: 1.10.0
+ * Version: 1.11.0
  * Author: Your Name
  */
 
@@ -11,7 +11,7 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('GRAYLOG_SEARCH_VERSION', '1.10.0');
+define('GRAYLOG_SEARCH_VERSION', '1.11.0');
 define('GRAYLOG_SEARCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GRAYLOG_SEARCH_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -27,6 +27,7 @@ require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/saved-searches.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/regex-search.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/field-manager.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/search-history.php';
+require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/export-pdf.php';
 
 // Activation hook
 register_activation_hook(__FILE__, 'graylog_search_activate');
