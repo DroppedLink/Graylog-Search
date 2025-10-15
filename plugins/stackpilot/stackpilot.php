@@ -37,6 +37,12 @@ function sp_deactivate() {
 	// No action on deactivation; uninstall.php handles cleanup
 }
 
+// === i18n ===
+add_action('plugins_loaded', 'sp_load_textdomain');
+function sp_load_textdomain() {
+	load_plugin_textdomain('stackpilot', false, dirname(plugin_basename(__FILE__)) . '/languages');
+}
+
 // === Assets ===
 add_action('admin_enqueue_scripts', 'sp_admin_enqueue_assets');
 function sp_admin_enqueue_assets($hook) {

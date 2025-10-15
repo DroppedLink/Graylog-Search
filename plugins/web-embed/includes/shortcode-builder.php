@@ -32,6 +32,9 @@ function web_embed_ajax_preview() {
         ));
     }
     
+    // Rate limiting: 10 previews per minute
+    web_embed_enforce_rate_limit('preview', 10, 60);
+    
     // Get and sanitize parameters
     $atts = web_embed_sanitize_attributes($_POST);
     

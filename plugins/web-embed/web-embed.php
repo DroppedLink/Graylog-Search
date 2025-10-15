@@ -42,6 +42,8 @@ define('WEB_EMBED_PLUGIN_URL', plugin_dir_url(__FILE__));
  */
 require_once WEB_EMBED_PLUGIN_DIR . 'includes/security.php';
 require_once WEB_EMBED_PLUGIN_DIR . 'includes/cache-handler.php';
+require_once WEB_EMBED_PLUGIN_DIR . 'includes/rate-limiter.php';
+require_once WEB_EMBED_PLUGIN_DIR . 'includes/audit-log.php';
 require_once WEB_EMBED_PLUGIN_DIR . 'includes/settings.php';
 require_once WEB_EMBED_PLUGIN_DIR . 'includes/shortcode.php';
 require_once WEB_EMBED_PLUGIN_DIR . 'includes/shortcode-builder.php';

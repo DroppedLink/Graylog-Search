@@ -1,325 +1,256 @@
-# AI Comment Moderator WordPress Plugin
-
-A powerful WordPress plugin that uses AI (via Ollama) to automatically moderate comments, detect spam, manage multiple remote WordPress sites, and provide comprehensive analytics.
-
-## Features
-
-### 🤖 AI-Powered Moderation
-
-* **Ollama Integration**: Uses local AI models for privacy and control
-* **Customizable Prompts**: Create and manage multiple moderation prompts
-* **Template Variables**: Include context like post content, author history, categories
-* **Multi-Model Consensus**: Optional voting system using multiple AI models
-* **Confidence Thresholds**: Granular control over auto-approve/reject decisions
-
-### 🔄 Batch Processing
-
-* **Configurable Batch Sizes**: Process 1-1000 comments at once
-* **Status Filtering**: Process approved, pending, or all comments
-* **Re-processing**: Option to re-evaluate already reviewed comments
-* **Progress Tracking**: Real-time progress indicators with detailed logs
-* **Background Jobs**: Handle large batches without browser timeouts
-
-### 🌐 Multi-Site Management
-
-* **Remote Sites**: Connect to multiple WordPress sites via REST API
-* **Application Passwords**: Secure authentication using WordPress native tokens
-* **Centralized Moderation**: Process comments from all sites in one place
-* **Automatic Sync**: AI decisions automatically pushed back to remote sites
-* **Site Statistics**: Track pending comments and sync status per site
-
-### 📊 Analytics & Reporting
-
-* **Dashboard Charts**: Visualize moderation trends over time
-* **Decision Breakdown**: See AI decisions (approve/spam/trash) with pie charts
-* **Top Flagged Authors**: Identify problematic commenters
-* **Export Reports**: CSV, JSON, and PDF exports for compliance
-* **Custom Date Ranges**: Filter analytics by specific time periods
-
-### 👥 User Reputation System
-
-* **Reputation Scores**: Track commenters (0-100 scale)
-* **Auto-Trust**: Users above threshold skip AI moderation
-* **Historical Tracking**: Approved/spam counts per user
-* **Manual Adjustments**: Admin can modify reputation scores
-* **Smart Whitelisting**: Good users get faster approvals
-
-### 🔔 Webhooks & Notifications
-
-* **Real-Time Alerts**: Send notifications to Slack, Discord, or custom endpoints
-* **Event Triggers**: Toxic content, high spam volume, low confidence decisions
-* **Activity Logs**: Track all webhook calls with responses
-* **Test Mode**: Verify webhook configuration before going live
-* **Retry Logic**: Automatic retries for failed webhook calls
-
-### 🎯 Moderation Queue
-
-* **Dedicated Review Interface**: Tabbed views for flagged, low-confidence comments
-* **Inline Actions**: Approve/reject without leaving the page
-* **Bulk Operations**: Process multiple comments at once
-* **Keyboard Shortcuts**: J/K navigation for efficient reviewing
-* **Post Context**: See full post details when reviewing comments
-
-### 💾 Data Management
-
-* **Preserve on Uninstall**: Option to keep data when deleting plugin
-* **Database Migration**: Smooth updates with schema versioning
-* **No Duplication**: Smart activation that prevents duplicate data
-* **Cleanup Tools**: Manual database cleanup options available
-
-## Installation
-
-### From GitHub Release
-
-1. Download the latest `ai-comment-moderator.zip` from [Releases](https://github.com/DroppedLink/ai-comment-moderator/releases)
-2. Go to **WordPress Admin → Plugins → Add New**
-3. Click **Upload Plugin**
-4. Choose the downloaded .zip file
-5. Click **Install Now** and then **Activate**
-
-### From WordPress Admin (with auto-updates)
-
-1. Install from the first method
-2. Plugin will automatically check for updates from GitHub
-3. Update notifications appear in WordPress admin
-4. One-click updates like any WordPress.org plugin
-
-## Requirements
-
-* **WordPress**: 5.0 or higher
-* **PHP**: 7.2 or higher
-* **Ollama**: Running instance with API access
-* **For Remote Sites**: WordPress 5.6+ with REST API enabled
-
-## Configuration
-
-### 1. Ollama Setup
-
-1. Go to **AI Moderator → Settings**
-2. Enter your Ollama URL (e.g., `http://localhost:11434`)
-3. Click **Test Connection & Load Models**
-4. Select your preferred AI model
-5. Set batch size and rate limits
-6. Save settings
-
-### 2. Creating Prompts
-
-1. Go to **AI Moderator → Prompts**
-2. Click **Add New Prompt**
-3. Enter prompt name and description
-4. Write your moderation instructions with template variables:
-   ```
-   You are moderating comments on a WordPress site.
-   
-   Post Title: {post_title}
-   Comment Author: {author_name}
-   Comment Content: {comment_content}
-   Author's Previous Comments: {author_previous_comments}
-   
-   Determine if this comment is:
-   - APPROVE: Appropriate and constructive
-   - SPAM: Spam or promotional
-   - TOXIC: Rude, offensive, or harmful
-   ```
-5. Configure actions for each decision type
-6. Save and activate prompt
-
-### 3. Adding Remote Sites
-
-1. On the **remote WordPress site**:
-   * Go to **Users → Profile**
-   * Scroll to **Application Passwords**
-   * Create new password named "AI Moderator"
-   * Copy the generated password
-
-2. On your **central site** (where plugin is installed):
-   * Go to **AI Moderator → Remote Sites**
-   * Fill in the Quick Add form:
-     - **Site Name**: Friendly name
-     - **Site URL**: Full URL with https://
-     - **Username**: WordPress username on remote site
-     - **Application Password**: Paste the password
-   * Click **Test Connection First** to verify
-   * Click **Add Remote Site**
-   * Click **Sync Now** to fetch comments
-
-### 4. Processing Comments
-
-**Local Comments:**
-1. Go to **AI Moderator → Batch Processing**
-2. Select "Local Site Comments" from source dropdown
-3. Choose comment status filter (All, Approved, Pending)
-4. Select your prompt
-5. Set number of comments to process
-6. Click **Start Processing**
-
-**Remote Comments:**
-1. Go to **AI Moderator → Batch Processing**
-2. Select remote site from "Comment Source" dropdown
-3. Select your prompt
-4. Set batch size
-5. Click **Start Processing**
-6. Decisions automatically sync back to remote site
-
-## Template Variables
-
-Use these in your prompts for context-aware moderation:
-
-| Variable | Description |
-|----------|-------------|
-| `{comment_content}` | The comment text |
-| `{author_name}` | Commenter's name |
-| `{author_email}` | Commenter's email |
-| `{author_url}` | Commenter's website |
-| `{comment_date}` | When comment was posted |
-| `{post_title}` | Title of the post |
-| `{post_content}` | Post content (trimmed to 100 words) |
-| `{post_categories}` | Comma-separated categories |
-| `{post_tags}` | Comma-separated tags |
-| `{comment_count}` | Number of comments on post |
-| `{author_previous_comments}` | How many comments author has made |
-| `{comment_id}` | Comment ID |
-| `{site_name}` | Site name (useful for remote sites) |
-| `{site_url}` | Site URL |
-
-## Auto-Updates Setup
-
-The plugin automatically checks for updates from GitHub.
-
-**Optional: GitHub Token for Higher Rate Limits**
-
-1. Generate a GitHub personal access token (no special permissions needed)
-2. Go to **AI Moderator → Settings**
-3. Scroll to **GitHub Updates** section
-4. Enter your token
-5. Save settings
-
-This increases API rate limits from 60 to 5000 requests/hour.
-
-## Documentation
-
-* **USAGE_GUIDE.md**: Detailed user guide
-* **REMOTE_SITES_GUIDE.md**: Multi-site management guide
-* **TROUBLESHOOTING_REMOTE_SITES.md**: Common issues and solutions
-* **DATA_PRESERVATION_GUIDE.md**: Data management options
-* **UPGRADE_NOTES.md**: Professional features overview
-
-## Version History
-
-### v1.0.0 (Latest)
-
-* Initial release
-* AI-powered comment moderation with Ollama
-* Customizable prompts with template variables
-* Batch processing with progress tracking
-* Multi-site remote management
-* User reputation system
-* Confidence thresholds
-* Moderation queue interface
-* Analytics dashboard
-* Export reports (CSV/JSON/PDF)
-* Webhook notifications
-* Multi-model consensus voting
-* Background job processing
-* Data preservation on uninstall
-* Automatic GitHub updates
-
-## Architecture
-
-```
-┌─────────────────────────────────────────┐
-│     WordPress Central Site              │
-│  (AI Comment Moderator Installed)       │
-│                                          │
-│  ┌────────────┐      ┌────────────┐     │
-│  │  Comment   │      │    AI      │     │
-│  │ Processor  │─────>│ Moderation │     │
-│  └────────────┘      └────────────┘     │
-│         │                    │           │
-│         │                    ↓           │
-│         │            ┌────────────┐      │
-│         │            │   Ollama   │      │
-│         │            │   Server   │      │
-│         │            └────────────┘      │
-│         │                                │
-│         ↓                                │
-│  ┌────────────┐                          │
-│  │   Remote   │                          │
-│  │   Site     │                          │
-│  │  Manager   │                          │
-│  └────────────┘                          │
-│         │                                │
-└─────────┼────────────────────────────────┘
-          │
-          ↓
-    ┌─────────────┐
-    │  Remote     │
-    │  WP Site 1  │
-    └─────────────┘
-    ┌─────────────┐
-    │  Remote     │
-    │  WP Site 2  │
-    └─────────────┘
-```
-
-## Database Tables
-
-* `wp_ai_comment_reviews` - Comment moderation history
-* `wp_ai_comment_prompts` - Custom prompts
-* `wp_ai_comment_logs` - Processing logs
-* `wp_ai_comment_reputation` - User reputation scores
-* `wp_ai_background_jobs` - Batch job tracking
-* `wp_ai_webhook_log` - Webhook activity log
-* `wp_ai_remote_sites` - Remote site configurations
-* `wp_ai_remote_comments` - Cached remote comments
-
-## Security
-
-* Application passwords encrypted using WordPress AUTH_KEY
-* REST API authentication for remote sites
-* Nonce verification on all AJAX requests
-* Capability checks (`manage_options`) for admin features
-* Sanitization of all user inputs
-* Secure webhook payload delivery
-
-## Support
-
-For issues, questions, or feature requests:
-* **GitHub Issues**: [https://github.com/DroppedLink/ai-comment-moderator/issues](https://github.com/DroppedLink/ai-comment-moderator/issues)
-* **Documentation**: See `/docs` folder in plugin
-* **WordPress Debug Log**: Enable `WP_DEBUG_LOG` for detailed error logging
-
-## License
-
-This plugin is provided for use with Ollama AI systems.
-
-## Credits
-
-**Author**: CSE  
-**Repository**: [https://github.com/DroppedLink/ai-comment-moderator](https://github.com/DroppedLink/ai-comment-moderator)
-
-Developed for administrators who need powerful, AI-driven comment moderation across single or multiple WordPress installations.
-
-## Roadmap
-
-**Planned Features:**
-* Machine learning from manual overrides
-* Sentiment analysis scoring
-* Custom AI model training
-* Integration with popular anti-spam plugins
-* Mobile app for moderation queue
-* Scheduled auto-moderation
-* A/B testing for prompts
-* Language detection and translation
-
-## Contributing
-
-Contributions welcome! Please:
+# AI Comment Moderator
+
+**Version:** 2.1.0  
+**Author:** CSE  
+**Requires:** WordPress 5.9+  
+**Requires PHP:** 7.4+  
+**License:** GPLv2 or later
+
+AI-powered comment moderation plugin supporting multiple AI providers (Ollama, OpenAI, Claude, OpenRouter) with intelligent context analysis and advanced features.
+
+## 🎯 Key Features
+
+### Multi-Provider AI Support
+- **Ollama** - Self-hosted, free, privacy-focused
+- **OpenAI** - GPT-3.5, GPT-4, GPT-4 Turbo, GPT-4o
+- **Claude** - Anthropic Claude 3 (Haiku, Sonnet, Opus, 3.5 Sonnet)
+- **OpenRouter** - 100+ models with automatic fallback
+
+### Intelligent Context Analysis
+- **Sentiment Detection** - Positive, negative, neutral, toxic
+- **Language Detection** - 13 languages supported
+- **Thread Analysis** - Conversation depth and sentiment
+- **Time Patterns** - Time of day, weekday/weekend detection
+- **Site Context** - Auto-detects site category
+- **User Reputation** - Tracks commenter history
+
+### Advanced Features
+- **Remote Site Management** - Moderate comments from multiple WordPress sites
+- **Batch Processing** - Process hundreds of comments at once
+- **Custom Prompts** - 28+ variables for intelligent decisions
+- **Import/Export** - Share prompts between sites
+- **Cost Tracking** - Monitor API usage and costs
+- **Budget Alerts** - Set spending limits for paid providers
+- **Analytics Dashboard** - Track performance and accuracy
+
+## 🚀 Quick Start
+
+### 1. Installation
+
+**Via WordPress Admin:**
+1. Go to Plugins → Add New
+2. Click "Upload Plugin"
+3. Choose `ai-comment-moderator.zip`
+4. Click "Install Now" and then "Activate"
+
+**Manual Installation:**
+1. Upload the plugin folder to `/wp-content/plugins/`
+2. Activate through the 'Plugins' menu in WordPress
+
+### 2. Choose Your AI Provider
+
+Navigate to **AI Moderator → Settings** and select a provider:
+
+#### Option A: Ollama (Free, Self-Hosted)
+1. [Install Ollama](https://ollama.ai/) on your server
+2. Pull a model: `ollama pull llama2`
+3. Enter Ollama URL (default: `http://localhost:11434`)
+4. Click "Test Connection & Load Models"
+5. Select your model
+6. Save Settings
+
+#### Option B: OpenAI
+1. Get API key from [platform.openai.com](https://platform.openai.com/api-keys)
+2. Select "OpenAI" as provider
+3. Enter your API key (starts with `sk-`)
+4. Select model (GPT-3.5 Turbo recommended for cost)
+5. Set monthly budget alert
+6. Save Settings
+
+#### Option C: Claude (Anthropic)
+1. Get API key from [console.anthropic.com](https://console.anthropic.com/)
+2. Select "Claude (Anthropic)" as provider
+3. Enter your API key (starts with `sk-ant-`)
+4. Select model (Haiku is fastest and cheapest)
+5. Set monthly budget alert
+6. Save Settings
+
+#### Option D: OpenRouter
+1. Get API key from [openrouter.ai/keys](https://openrouter.ai/keys)
+2. Select "OpenRouter" as provider
+3. Enter your API key
+4. Click "Test Connection" to load 100+ models
+5. Select primary model and optional fallbacks
+6. Save Settings
+
+### 3. Configure Prompts
+
+Go to **AI Moderator → Prompts**:
+- Use default prompts or create custom ones
+- Available variables: `{comment_content}`, `{author_name}`, `{comment_sentiment}`, `{user_reputation}`, and 24 more
+- Import prompts from JSON or export to share
+
+### 4. Start Moderating
+
+**Batch Processing:**
+1. Go to **AI Moderator → Batch Process**
+2. Select comment status (pending, approved, or all)
+3. Choose batch size (1-100 comments)
+4. Click "Start Batch Processing"
+5. Monitor real-time progress
+
+**Remote Sites** (Optional):
+1. Go to **AI Moderator → Remote Sites**
+2. Add remote WordPress site with application password
+3. Sync comments
+4. Process comments from all sites in one place
+
+## 📊 Cost Comparison
+
+| Provider | Model | Cost per Comment* | Notes |
+|----------|-------|------------------|-------|
+| **Ollama** | Any | $0.00 | Self-hosted, you pay for hardware |
+| **Claude** | Haiku | ~$0.0005 | Fastest, most affordable |
+| **OpenAI** | GPT-3.5 Turbo | ~$0.001 | Good balance |
+| **OpenRouter** | Varies | ~$0.001 avg | 100+ models to choose from |
+| **Claude** | Sonnet | ~$0.005 | Better accuracy |
+| **OpenAI** | GPT-4 Turbo | ~$0.02 | High accuracy |
+| **Claude** | Opus | ~$0.02 | Most capable |
+| **OpenAI** | GPT-4 | ~$0.05 | Premium accuracy |
+
+*Estimates based on typical comment length (50-100 words)
+
+**Example:** Processing 1,000 comments/month:
+- Ollama: **$0** (free)
+- Claude Haiku: **$0.50/month**
+- GPT-3.5 Turbo: **$1/month**
+- GPT-4 Turbo: **$20/month**
+
+## 🎨 Context Variables
+
+Use these in your prompts for smarter AI decisions:
+
+### Basic Variables
+- `{comment_content}` - The comment text
+- `{author_name}` - Commenter's name
+- `{author_email}` - Commenter's email
+- `{post_title}` - Post title
+- `{site_name}` - Your site name
+
+### Context Intelligence (v2.1.0+)
+- `{comment_sentiment}` - positive/negative/neutral/toxic
+- `{comment_language}` - en/es/fr/de/etc (13 languages)
+- `{thread_depth}` - Conversation nesting level
+- `{thread_sentiment}` - Overall thread tone
+- `{time_of_day}` - morning/afternoon/evening/night
+- `{is_weekend}` - yes/no
+- `{user_reputation}` - new/poor/neutral/good/excellent
+- `{user_history}` - Comment statistics
+- `{is_new_user}` - yes/no
+
+[See all 28 variables →](docs/prompt-variables.md)
+
+## 📖 Documentation
+
+- [Getting Started Guide](docs/getting-started.md)
+- [Provider Setup Guides](docs/providers/)
+  - [Ollama Setup](docs/providers/ollama.md)
+  - [OpenAI Setup](docs/providers/openai.md)
+  - [Claude Setup](docs/providers/claude.md)
+  - [OpenRouter Setup](docs/providers/openrouter.md)
+- [Prompt Writing Guide](docs/prompts.md)
+- [Remote Sites Guide](docs/remote-sites.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [FAQ](docs/faq.md)
+
+## 🔒 Security
+
+- API keys encrypted using WordPress AUTH_KEY
+- Nonce verification on all AJAX requests
+- Capability checks on all admin pages
+- Input sanitization and output escaping
+- Prepared database statements
+- HTTPS-only for API calls
+
+## 🌍 Multilingual Support
+
+- Plugin UI translatable (i18n ready)
+- Detects comment language automatically
+- Supports 13 languages for moderation
+- RTL language support
+
+## 🔧 System Requirements
+
+### Minimum
+- WordPress 5.9 or higher
+- PHP 7.4 or higher
+- MySQL 5.6 or higher
+- 64MB PHP memory limit
+
+### Recommended
+- WordPress 6.4 or higher
+- PHP 8.1 or higher
+- MySQL 8.0 or higher
+- 128MB PHP memory limit
+
+### For Ollama
+- Server with Docker support
+- 8GB RAM minimum
+- 4GB disk space for models
+
+## 🤝 Contributing
+
+We welcome contributions! Please:
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request
 
-## Changelog
+## 📝 Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
+### Latest: v2.1.0 (2025-01-15)
+- ✨ Context-aware moderation with sentiment & language detection
+- ✨ 13 new prompt variables for smarter decisions
+- ✨ Import/Export prompts (JSON format)
+- ✨ User reputation tracking
+- ✨ Multilingual comment detection
+- ✨ Thread-aware moderation
+
+## 🆘 Support
+
+- [GitHub Issues](https://github.com/DroppedLink/ai-comment-moderator/issues)
+- [Documentation](docs/)
+
+## 📜 License
+
+This plugin is licensed under the GPL v2 or later.
+
+```
+Copyright (C) 2025 CSE
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+```
+
+## 🌟 Credits
+
+Built by CSE with ❤️ for the WordPress community.
+
+Special thanks to:
+- Ollama team for local AI infrastructure
+- OpenAI for GPT models
+- Anthropic for Claude
+- OpenRouter for unified API access
+
+---
+
+**Ready to moderate comments intelligently?** [Get Started →](#-quick-start)
