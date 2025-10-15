@@ -27,9 +27,16 @@ function graylog_search_shortcode($atts) {
         return '<div class="graylog-error">Graylog API is not configured. Please contact your administrator.</div>';
     }
     
-    // Enqueue scripts and styles for this shortcode
+    // Enqueue ALL scripts and styles for this shortcode
     wp_enqueue_style('graylog-search-style');
+    wp_enqueue_style('graylog-search-query-builder');
+    wp_enqueue_style('graylog-search-history');
+    
     wp_enqueue_script('graylog-search-script');
+    wp_enqueue_script('graylog-search-keyboard');
+    wp_enqueue_script('graylog-search-regex');
+    wp_enqueue_script('graylog-search-query-builder');
+    wp_enqueue_script('graylog-search-history');
     
     // Generate unique ID for this instance
     $instance_id = 'graylog-search-' . uniqid();
@@ -38,6 +45,19 @@ function graylog_search_shortcode($atts) {
     ob_start();
     ?>
     <div class="graylog-search-shortcode" id="<?php echo esc_attr($instance_id); ?>">
+        <!-- Header with tools -->
+        <div class="graylog-search-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <h2 style="margin: 0; font-size: 20px;">Graylog Search</h2>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <span id="connection-status" class="connection-status" title="Connection status">
+                    <span class="status-dot status-unknown"></span>
+                </span>
+                <button type="button" class="button button-large graylog-dark-mode-toggle" title="Toggle dark mode">
+                    <span class="dashicons dashicons-admin-appearance"></span>
+                </button>
+            </div>
+        </div>
+        
         <div class="graylog-search-compact-form">
             <form class="graylog-search-form">
                 <div class="graylog-form-row">
@@ -70,9 +90,13 @@ function graylog_search_shortcode($atts) {
                     <div class="graylog-form-col">
                         <label for="<?php echo esc_attr($instance_id); ?>_timerange">Time Range:</label>
                         <select id="<?php echo esc_attr($instance_id); ?>_timerange" class="graylog-select time-range">
-                            <option value="3600">Last Hour</option>
-                            <option value="86400" selected>Last Day</option>
-                            <option value="604800">Last Week</option>
+                            <option value="60">Last Hour</option>
+                            <option value="240">Last 4 Hours</option>
+                            <option value="480">Last 8 Hours</option>
+                            <option value="720">Last 12 Hours</option>
+                            <option value="1440" selected>Last Day</option>
+                            <option value="4320">Last 3 Days</option>
+                            <option value="10080">Last Week</option>
                         </select>
                     </div>
                     
@@ -92,17 +116,49 @@ function graylog_search_shortcode($atts) {
                     </div>
                 </div>
                 
-                <div class="graylog-form-row" style="margin-top: 10px;">
+                <!-- Advanced Search Tools Row -->
+                <div class="graylog-form-row" style="margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <!-- Regex Mode -->
+                    <div class="regex-mode-controls">
+                        <label title="Enable regex search mode">
+                            <input type="checkbox" id="regex-mode-toggle"> Regex Mode
+                        </label>
+                    </div>
+                    
+                    <!-- Regex Helper Buttons -->
+                    <div class="regex-helper-buttons" style="display: none;">
+                        <button type="button" class="button button-small" id="regex-pattern-library-btn">
+                            <span class="dashicons dashicons-book"></span> Pattern Library
+                        </button>
+                        <button type="button" class="button button-small" id="regex-tester-btn">
+                            <span class="dashicons dashicons-admin-tools"></span> Test Regex
+                        </button>
+                        <button type="button" class="button button-small" id="regex-syntax-btn">
+                            <span class="dashicons dashicons-editor-help"></span> Syntax Help
+                        </button>
+                    </div>
+                    
+                    <!-- Visual Query Builder Button -->
+                    <button type="button" class="button button-large" id="open-query-builder">
+                        <span class="dashicons dashicons-editor-code"></span> Visual Query Builder
+                    </button>
+                    
+                    <!-- Search History Button -->
+                    <button type="button" class="button button-large" id="view-search-history">
+                        <span class="dashicons dashicons-backup"></span> Search History
+                    </button>
+                    
+                    <!-- Auto-Refresh -->
                     <div class="auto-refresh-controls">
                         <label>
                             <input type="checkbox" id="auto-refresh-toggle">
-                            Auto-refresh every
+                            Auto-refresh
                         </label>
                         <select id="auto-refresh-interval">
-                            <option value="5">5s</option>
-                            <option value="10" selected>10s</option>
-                            <option value="30">30s</option>
+                            <option value="15">15s</option>
+                            <option value="30" selected>30s</option>
                             <option value="60">60s</option>
+                            <option value="300">5min</option>
                         </select>
                     </div>
                 </div>
@@ -137,6 +193,7 @@ function graylog_search_shortcode($atts) {
                                 <span class="dashicons dashicons-download"></span> Export
                             </button>
                             <div class="export-menu" style="display: none;">
+                                <button class="export-pdf">📄 PDF Report</button>
                                 <button class="export-csv">CSV</button>
                                 <button class="export-json">JSON</button>
                                 <button class="export-txt">Text</button>
@@ -186,6 +243,8 @@ function graylog_search_shortcode($atts) {
 add_action('wp_enqueue_scripts', 'graylog_search_enqueue_frontend_assets');
 function graylog_search_enqueue_frontend_assets() {
     // Register (but don't enqueue yet - only when shortcode is used)
+    
+    // Styles
     wp_register_style(
         'graylog-search-style',
         GRAYLOG_SEARCH_PLUGIN_URL . 'assets/css/style.css',
@@ -193,9 +252,56 @@ function graylog_search_enqueue_frontend_assets() {
         GRAYLOG_SEARCH_VERSION
     );
     
+    wp_register_style(
+        'graylog-search-query-builder',
+        GRAYLOG_SEARCH_PLUGIN_URL . 'assets/css/query-builder.css',
+        array('graylog-search-style'),
+        GRAYLOG_SEARCH_VERSION
+    );
+    
+    wp_register_style(
+        'graylog-search-history',
+        GRAYLOG_SEARCH_PLUGIN_URL . 'assets/css/search-history.css',
+        array('graylog-search-style'),
+        GRAYLOG_SEARCH_VERSION
+    );
+    
+    // Scripts
     wp_register_script(
         'graylog-search-script',
         GRAYLOG_SEARCH_PLUGIN_URL . 'assets/js/search.js',
+        array('jquery'),
+        GRAYLOG_SEARCH_VERSION,
+        true
+    );
+    
+    wp_register_script(
+        'graylog-search-keyboard',
+        GRAYLOG_SEARCH_PLUGIN_URL . 'assets/js/keyboard-shortcuts.js',
+        array('jquery'),
+        GRAYLOG_SEARCH_VERSION,
+        true
+    );
+    
+    wp_register_script(
+        'graylog-search-regex',
+        GRAYLOG_SEARCH_PLUGIN_URL . 'assets/js/regex-helper.js',
+        array('jquery'),
+        GRAYLOG_SEARCH_VERSION,
+        true
+    );
+    
+    wp_register_script(
+        'graylog-search-query-builder',
+        GRAYLOG_SEARCH_PLUGIN_URL . 'assets/js/query-builder.js',
+        array('jquery'),
+        GRAYLOG_SEARCH_VERSION,
+        true
+    );
+    
+    wp_register_script(
+        'graylog-search-history',
+        GRAYLOG_SEARCH_PLUGIN_URL . 'assets/js/search-history.js',
         array('jquery'),
         GRAYLOG_SEARCH_VERSION,
         true

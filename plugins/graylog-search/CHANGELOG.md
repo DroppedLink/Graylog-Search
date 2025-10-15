@@ -2,6 +2,46 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.11.1] - 2025-10-15 - Bugfix: Shortcode Feature Parity
+
+### Fixed - Shortcode Missing Features
+- **All Advanced Features Now Available in Shortcode**: The `[graylog_search]` shortcode now includes ALL features from the admin interface
+- **Added to Shortcode**:
+  - Dark mode toggle with connection status indicator
+  - Regex search mode with Pattern Library, Tester, and Syntax Help buttons
+  - Visual Query Builder button
+  - Search History button
+  - PDF Export in export menu
+  - All advanced time range options (Last Hour, 4h, 8h, 12h, 24h, 3d, 7d)
+  - Complete toolbar with all export options
+  - Full feature parity with admin interface
+- **Script/Style Loading**: All necessary JS/CSS files now properly registered and enqueued for shortcode
+  - query-builder.css/js
+  - search-history.css/js
+  - keyboard-shortcuts.js
+  - regex-helper.js
+
+### Technical
+- Modified: `includes/shortcode.php`
+  - Added header with dark mode toggle and connection status
+  - Added all advanced search tool buttons
+  - Added PDF export to menu
+  - Updated asset enqueuing to include all files
+  - Registered all styles (style.css, query-builder.css, search-history.css)
+  - Registered all scripts (search.js, keyboard-shortcuts.js, regex-helper.js, query-builder.js, search-history.js)
+- Modified: `graylog-search.php` - Version 1.11.1
+
+### Benefits
+✅ **Feature Parity**: Shortcode users get ALL features, not a limited subset  
+✅ **Consistent Experience**: Same powerful interface whether in admin or embedded  
+✅ **Full Functionality**: Regex, Query Builder, History, PDF export all work in shortcode  
+✅ **Complete Toolset**: No feature left behind for embedded search  
+
+### User Impact
+- **Before**: Shortcode showed basic search only (no advanced features)
+- **After**: Shortcode shows complete interface with all 50+ features
+- **Upgrade**: Simply update plugin - shortcodes automatically get all features
+
 ## [1.11.0] - 2025-10-15 - Phase 3 Begins: PDF Export + Comprehensive Testing Guide
 
 ### Added - PDF Report Export
