@@ -2,6 +2,81 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.9.0] - 2025-10-15 - PHASE 2: Visual Query Builder & Field Search
+
+### Added - Visual Query Builder
+- **Drag-and-Drop Interface**: Build complex queries visually without Lucene syntax
+- **Query Groups**: Organize conditions into logical groups with AND/OR operators
+- **Field Selector**: Dropdown of all available Graylog fields
+  - message, source, fqdn, timestamp, level, facility, application
+  - Graylog internal fields (gl2_source_input, gl2_source_node)
+- **Smart Operators**: Context-aware operators based on field type
+  - String fields: Contains, Equals, Not Equals, Regex, Exists
+  - Number fields: Greater Than, Less Than, Between
+  - Date fields: Greater Than, Less Than, Between
+- **Condition Builder**: Visual blocks for each search condition
+  - Field selection
+  - Operator selection
+  - Value input
+  - Easy remove buttons
+- **Boolean Logic**: Combine conditions with AND, OR, NOT
+- **Query Preview**: Real-time Lucene syntax preview
+- **Query Templates**: Save and reuse common query patterns
+  - Name and description
+  - Load from library
+  - Delete unwanted templates
+
+### Added - Field-Specific Search
+- **Search Any Field**: No longer limited to message/fqdn
+- **Multi-Field Queries**: Search across multiple fields at once
+- **Field Metadata**: Type-aware field definitions
+- **Smart Escaping**: Automatic Lucene special character escaping
+
+### User Experience
+- **Large Modal Interface**: Professional query builder UI
+  - Top-level operator selection (AND/OR for groups)
+  - Add/remove groups and conditions
+  - Responsive grid layout for conditions
+  - Color-coded groups with borders
+- **Query Actions**: Three powerful options
+  - Use This Query: Apply to search immediately
+  - Save as Template: Store for future use
+  - Load Template: Quick access to saved queries
+- **Visual Feedback**: Hover effects, transitions, animations
+- **Empty States**: Helpful prompts when no conditions exist
+
+### Technical
+- New file: `includes/field-manager.php` (11KB) - Field discovery, operators, Lucene query building
+- New file: `assets/js/query-builder.js` (21KB) - Complete query builder UI
+- New file: `assets/css/query-builder.css` (10KB) - Professional styling
+- Updated `graylog-search.php`: v1.9.0, includes field-manager, enqueues query-builder files
+
+### AJAX Endpoints
+- `graylog_get_fields`: Get available Graylog fields
+- `graylog_get_operators`: Get field operators
+- `graylog_build_query`: Convert visual structure to Lucene
+- `graylog_save_query_template`: Save query template
+- `graylog_get_query_templates`: Get user's templates
+- `graylog_delete_query_template`: Delete template
+
+### Query Building Logic
+- Lucene special character escaping
+- Smart value quoting (spaces handled automatically)
+- Group parenthesization for complex logic
+- Between operator support (field:[min TO max])
+- Regex operator support (field:/pattern/)
+- Exists/Not Exists operators
+
+### Benefits
+- **No Lucene Knowledge Required**: Visual interface for everyone
+- **Complex Queries Made Easy**: Drag-and-drop instead of syntax
+- **Error-Free**: Validation prevents syntax errors
+- **Reusable**: Save templates for common searches
+- **Powerful**: Full Lucene capabilities via UI
+
+### Next Steps (Phase 2 Continued)
+- Search history with database storage and favorites
+
 ## [1.8.0] - 2025-10-15 - PHASE 2: Regex Search with Pattern Library
 
 ### Added - Regex Search

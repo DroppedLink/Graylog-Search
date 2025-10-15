@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Graylog Search
  * Description: Simple interface for non-technical users to search Graylog logs via API
- * Version: 1.8.0
+ * Version: 1.9.0
  * Author: Your Name
  */
 
@@ -11,7 +11,7 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('GRAYLOG_SEARCH_VERSION', '1.8.0');
+define('GRAYLOG_SEARCH_VERSION', '1.9.0');
 define('GRAYLOG_SEARCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GRAYLOG_SEARCH_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -25,6 +25,7 @@ require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/timezone-handler.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/github-updater.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/saved-searches.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/regex-search.php';
+require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/field-manager.php';
 
 // Activation hook
 register_activation_hook(__FILE__, 'graylog_search_activate');
@@ -72,6 +73,14 @@ function graylog_search_enqueue_common_assets() {
         GRAYLOG_SEARCH_VERSION
     );
     
+    // Enqueue Query Builder CSS
+    wp_enqueue_style(
+        'graylog-search-query-builder',
+        GRAYLOG_SEARCH_PLUGIN_URL . 'assets/css/query-builder.css',
+        array('graylog-search-style'),
+        GRAYLOG_SEARCH_VERSION
+    );
+    
     // Enqueue main JavaScript
     wp_enqueue_script(
         'graylog-search-script',
@@ -94,6 +103,15 @@ function graylog_search_enqueue_common_assets() {
     wp_enqueue_script(
         'graylog-search-regex',
         GRAYLOG_SEARCH_PLUGIN_URL . 'assets/js/regex-helper.js',
+        array('jquery'),
+        GRAYLOG_SEARCH_VERSION,
+        true
+    );
+    
+    // Enqueue query builder
+    wp_enqueue_script(
+        'graylog-search-query-builder',
+        GRAYLOG_SEARCH_PLUGIN_URL . 'assets/js/query-builder.js',
         array('jquery'),
         GRAYLOG_SEARCH_VERSION,
         true
