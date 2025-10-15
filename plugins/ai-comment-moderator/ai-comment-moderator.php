@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AI Comment Moderator
  * Description: Multi-provider AI comment moderation (Ollama, OpenAI, Claude, OpenRouter) with advanced features
- * Version: 2.0.1
+ * Version: 2.1.0
  * Author: CSE
  */
 
@@ -11,7 +11,7 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('AI_COMMENT_MODERATOR_VERSION', '2.0.1');
+define('AI_COMMENT_MODERATOR_VERSION', '2.1.0');
 define('AI_COMMENT_MODERATOR_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AI_COMMENT_MODERATOR_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -24,6 +24,7 @@ require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/ai-provider-factory.php
 require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/ollama-client.php';
 
 // Core includes
+require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/context-analyzer.php';
 require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/reputation-manager.php';
 require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/webhook-handler.php';
 require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/remote-site-manager.php';

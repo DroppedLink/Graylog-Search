@@ -87,7 +87,106 @@ class AI_Comment_Moderator_Prompt_Manager {
     }
     
     /**
-     * Process prompt template with variables
+     * Export prompts to JSON
+     */
+    public static function export_prompts($prompt_ids = array()) {
+        $prompts = array();
+        
+        if (empty($prompt_ids)) {
+            // Export all prompts
+            $prompts = self::get_prompts();
+        } else {
+            // Export specific prompts
+            foreach ($prompt_ids as $id) {
+                $prompt = self::get_prompt($id);
+                if ($prompt) {
+                    $prompts[] = $prompt;
+                }
+            }
+        }
+        
+        // Convert to array format
+        $export_data = array(
+            'version' => '2.1.0',
+            'exported_at' => current_time('mysql'),
+            'prompts' => array()
+        );
+        
+        foreach ($prompts as $prompt) {
+            $export_data['prompts'][] = array(
+                'name' => $prompt->name,
+                'prompt_text' => $prompt->prompt_text,
+                'action_approve' => $prompt->action_approve,
+                'action_spam' => $prompt->action_spam,
+                'action_trash' => $prompt->action_trash,
+                'category' => $prompt->category,
+                'is_active' => $prompt->is_active
+            );
+        }
+        
+        return json_encode($export_data, JSON_PRETTY_PRINT);
+    }
+    
+    /**
+     * Import prompts from JSON
+     */
+    public static function import_prompts($json_data, $overwrite = false) {
+        $data = json_decode($json_data, true);
+        
+        if (!$data || !isset($data['prompts'])) {
+            return array(
+                'success' => false,
+                'error' => 'Invalid import data format'
+            );
+        }
+        
+        $imported = 0;
+        $skipped = 0;
+        $errors = 0;
+        
+        foreach ($data['prompts'] as $prompt_data) {
+            // Check if prompt with same name exists
+            global $wpdb;
+            $table = $wpdb->prefix . 'ai_comment_prompts';
+            $existing = $wpdb->get_row($wpdb->prepare(
+                "SELECT id FROM $table WHERE name = %s",
+                $prompt_data['name']
+            ));
+            
+            if ($existing && !$overwrite) {
+                $skipped++;
+                continue;
+            }
+            
+            if ($existing && $overwrite) {
+                // Update existing
+                $result = self::update_prompt($existing->id, $prompt_data);
+                if ($result !== false) {
+                    $imported++;
+                } else {
+                    $errors++;
+                }
+            } else {
+                // Create new
+                $result = self::create_prompt($prompt_data);
+                if ($result) {
+                    $imported++;
+                } else {
+                    $errors++;
+                }
+            }
+        }
+        
+        return array(
+            'success' => true,
+            'imported' => $imported,
+            'skipped' => $skipped,
+            'errors' => $errors
+        );
+    }
+    
+    /**
+     * Process prompt template with variables (Enhanced with context)
      */
     public static function process_prompt_template($prompt_text, $comment_id) {
         global $wpdb;
@@ -157,7 +256,12 @@ class AI_Comment_Moderator_Prompt_Manager {
             $post_title = $post ? $post->post_title : 'Unknown Post';
         }
         
+        // Get context analysis (v2.1.0+)
+        $context = AI_Comment_Moderator_Context_Analyzer::get_full_context($comment_id);
+        
+        // Build variables array with legacy and new context variables
         $variables = array(
+            // Legacy variables
             '{comment_content}' => $comment->comment_content,
             '{author_name}' => $comment->comment_author,
             '{author_email}' => $comment->comment_author_email,
@@ -173,7 +277,27 @@ class AI_Comment_Moderator_Prompt_Manager {
             '{author_previous_comments}' => $previous_comments,
             '{comment_id}' => $comment_id,
             '{site_name}' => $site_name,
-            '{site_url}' => $site_url
+            '{site_url}' => $site_url,
+            
+            // New context variables (v2.1.0+)
+            '{comment_sentiment}' => $context['sentiment'],
+            '{comment_language}' => $context['language'],
+            '{thread_depth}' => $context['thread']['thread_depth'],
+            '{thread_sentiment}' => $context['thread']['thread_sentiment'],
+            '{sibling_count}' => $context['thread']['sibling_count'],
+            '{time_of_day}' => $context['time']['time_of_day'],
+            '{day_of_week}' => $context['time']['day_of_week'],
+            '{is_weekend}' => $context['time']['is_weekend'] ? 'yes' : 'no',
+            '{site_context}' => $context['site']['category'],
+            '{site_description}' => $context['site']['description'],
+            '{user_history}' => sprintf(
+                '%d total, %d approved, %d spam',
+                $context['user_history']['total_comments'],
+                $context['user_history']['approved_comments'],
+                $context['user_history']['spam_comments']
+            ),
+            '{user_reputation}' => $context['user_history']['reputation'],
+            '{is_new_user}' => $context['user_history']['is_new_user'] ? 'yes' : 'no'
         );
         
         return str_replace(array_keys($variables), array_values($variables), $prompt_text);

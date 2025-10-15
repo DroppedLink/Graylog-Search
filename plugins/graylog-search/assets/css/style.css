@@ -163,6 +163,309 @@ body.graylog-dark-mode {
     display: block;
 }
 
+/* Regex Helper Styles */
+.regex-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.regex-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 99998;
+    animation: fadeIn 0.2s;
+}
+
+.regex-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--graylog-bg-primary);
+    border-radius: 8px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+    z-index: 99999;
+    max-width: 900px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: slideUp 0.3s;
+}
+
+.regex-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--graylog-border-color);
+}
+
+.regex-modal-header h2 {
+    margin: 0;
+    color: var(--graylog-text-primary);
+}
+
+.regex-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--graylog-text-secondary);
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+}
+
+.regex-modal-close:hover {
+    background: var(--graylog-bg-secondary);
+}
+
+.regex-modal-body {
+    padding: 20px;
+    max-height: calc(90vh - 80px);
+    overflow-y: auto;
+}
+
+.regex-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--graylog-border-color);
+}
+
+.regex-tab {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--graylog-text-secondary);
+    transition: all 0.2s;
+}
+
+.regex-tab:hover {
+    color: var(--graylog-text-primary);
+    background: var(--graylog-bg-secondary);
+}
+
+.regex-tab.active {
+    color: var(--graylog-accent-primary);
+    border-bottom-color: var(--graylog-accent-primary);
+}
+
+.regex-pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.regex-pattern-card {
+    background: var(--graylog-bg-secondary);
+    border: 1px solid var(--graylog-border-color);
+    border-radius: 5px;
+    padding: 15px;
+    transition: all 0.2s;
+}
+
+.regex-pattern-card:hover {
+    box-shadow: 0 2px 8px var(--graylog-shadow-medium);
+    transform: translateY(-2px);
+}
+
+.regex-pattern-name {
+    font-weight: bold;
+    color: var(--graylog-text-primary);
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.regex-pattern-desc {
+    color: var(--graylog-text-secondary);
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.regex-pattern-code {
+    background: var(--graylog-bg-tertiary);
+    padding: 8px;
+    border-radius: 3px;
+    margin-bottom: 8px;
+    word-break: break-all;
+}
+
+.regex-pattern-code code {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #d63301;
+}
+
+.regex-pattern-example {
+    font-size: 12px;
+    color: var(--graylog-text-tertiary);
+    margin-bottom: 10px;
+}
+
+.regex-pattern-actions {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.regex-add-custom {
+    background: var(--graylog-bg-secondary);
+    border: 2px dashed var(--graylog-border-color);
+    border-radius: 5px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.regex-add-custom h3 {
+    margin-top: 0;
+    color: var(--graylog-text-primary);
+}
+
+.regex-tester-section {
+    margin-bottom: 20px;
+}
+
+.regex-tester-section label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--graylog-text-primary);
+}
+
+#regex-validation-result {
+    margin-top: 5px;
+    font-size: 13px;
+}
+
+.regex-tester-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.regex-test-results {
+    background: var(--graylog-bg-secondary);
+    border: 1px solid var(--graylog-border-color);
+    border-radius: 5px;
+    padding: 15px;
+}
+
+.regex-test-success h3 {
+    margin-top: 0;
+    color: var(--graylog-success-text);
+}
+
+.regex-matches-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.regex-matches-table th,
+.regex-matches-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--graylog-border-color);
+}
+
+.regex-matches-table th {
+    background: var(--graylog-bg-tertiary);
+    font-weight: bold;
+}
+
+.regex-error {
+    color: var(--graylog-error-text);
+    background: var(--graylog-error-bg);
+    border: 1px solid var(--graylog-error-border);
+    padding: 10px;
+    border-radius: 3px;
+}
+
+.regex-syntax-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.regex-syntax-section h3 {
+    margin-top: 0;
+    color: var(--graylog-text-primary);
+    border-bottom: 2px solid var(--graylog-accent-primary);
+    padding-bottom: 8px;
+}
+
+.regex-syntax-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.regex-syntax-table td {
+    padding: 6px;
+    border-bottom: 1px solid var(--graylog-border-light);
+}
+
+.regex-syntax-table td:first-child {
+    font-family: 'Courier New', monospace;
+    background: var(--graylog-bg-secondary);
+    width: 80px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.regex-syntax-examples {
+    grid-column: 1 / -1;
+}
+
+.regex-syntax-examples ul {
+    list-style: none;
+    padding: 0;
+}
+
+.regex-syntax-examples li {
+    padding: 8px;
+    margin-bottom: 5px;
+    background: var(--graylog-bg-secondary);
+    border-radius: 3px;
+}
+
+.regex-syntax-examples code {
+    background: var(--graylog-bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    color: #d63301;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -40%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
 .graylog-search-wrap {
     max-width: 1400px;
 }
