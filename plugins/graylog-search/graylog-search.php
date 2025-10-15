@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Graylog Search
  * Description: Simple interface for non-technical users to search Graylog logs via API
- * Version: 1.7.1
+ * Version: 1.8.0
  * Author: Your Name
  */
 
@@ -11,7 +11,7 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('GRAYLOG_SEARCH_VERSION', '1.7.1');
+define('GRAYLOG_SEARCH_VERSION', '1.8.0');
 define('GRAYLOG_SEARCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GRAYLOG_SEARCH_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -24,6 +24,7 @@ require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/dns-lookup.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/timezone-handler.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/github-updater.php';
 require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/saved-searches.php';
+require_once GRAYLOG_SEARCH_PLUGIN_DIR . 'includes/regex-search.php';
 
 // Activation hook
 register_activation_hook(__FILE__, 'graylog_search_activate');
@@ -84,6 +85,15 @@ function graylog_search_enqueue_common_assets() {
     wp_enqueue_script(
         'graylog-search-keyboard',
         GRAYLOG_SEARCH_PLUGIN_URL . 'assets/js/keyboard-shortcuts.js',
+        array('jquery'),
+        GRAYLOG_SEARCH_VERSION,
+        true
+    );
+    
+    // Enqueue regex helper
+    wp_enqueue_script(
+        'graylog-search-regex',
+        GRAYLOG_SEARCH_PLUGIN_URL . 'assets/js/regex-helper.js',
         array('jquery'),
         GRAYLOG_SEARCH_VERSION,
         true

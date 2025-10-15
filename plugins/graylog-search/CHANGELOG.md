@@ -2,6 +2,77 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.8.0] - 2025-10-15 - PHASE 2: Regex Search with Pattern Library
+
+### Added - Regex Search
+- **Regex Mode Toggle**: Enable/disable regex search mode with checkbox
+- **Pattern Library**: 18 pre-built common regex patterns
+  - IP addresses (IPv4, IPv6)
+  - Email addresses
+  - URLs
+  - UUIDs
+  - Dates and times
+  - MAC addresses
+  - Credit cards
+  - Phone numbers
+  - File paths (Unix/Windows)
+  - Error codes
+  - HTTP status codes
+  - JSON objects
+  - Quoted strings
+  - Word boundaries
+- **Regex Tester**: Interactive inline tester
+  - Real-time pattern validation
+  - Test against sample text
+  - See all matches with positions
+  - Use tested pattern directly in search
+- **Syntax Helper**: Complete regex cheat sheet
+  - Basic patterns (\\d, \\w, \\s, \\b)
+  - Quantifiers (*, +, ?, {n,m})
+  - Groups and alternation
+  - Character classes
+  - Common examples
+- **Custom Patterns**: Save your own regex patterns
+  - Save frequently used patterns
+  - Name and description
+  - Quick access from pattern library
+  - Delete unwanted patterns
+
+### User Experience
+- **Regex Controls**: New button group below search terms
+  - 📚 Pattern Library button
+  - 🧪 Test Regex button
+  - ❓ Syntax Help button
+- **Beautiful Modals**: Professional UI for all regex tools
+  - Tabbed interface (Common/Custom patterns)
+  - Grid layout for pattern cards
+  - Copy to clipboard
+  - Use pattern directly
+- **Pattern Cards**: Rich display for each pattern
+  - Pattern name and description
+  - Code display with syntax highlighting
+  - Example values
+  - Action buttons (Use, Copy, Delete)
+
+### Technical
+- New file: `includes/regex-search.php` - Backend handlers for regex functionality
+- New file: `assets/js/regex-helper.js` - Frontend regex UI and interactions
+- Updated `assets/css/style.css`: Regex modal and UI styling
+- Updated `graylog-search.php`: v1.8.0, includes regex-search.php, enqueues regex-helper.js
+
+### AJAX Endpoints
+- `graylog_get_regex_patterns`: Get common regex patterns
+- `graylog_validate_regex`: Validate regex syntax
+- `graylog_test_regex`: Test regex against sample text
+- `graylog_save_regex_pattern`: Save custom pattern
+- `graylog_get_custom_regex_patterns`: Get user's custom patterns
+- `graylog_delete_regex_pattern`: Delete custom pattern
+
+### Next Steps (Phase 2 Continued)
+- Visual query builder
+- Field-specific search
+- Search history with database storage
+
 ## [1.7.1] - 2025-10-15 - PHASE 1 COMPLETE: Error Handling & Debouncing
 
 ### Added - Better Error Handling
