@@ -118,6 +118,25 @@ function graylog_search_settings_page() {
                         </p>
                     </td>
                 </tr>
+                <tr>
+                    <th scope="row">Connection Test</th>
+                    <td>
+                        <button type="button" id="test-graylog-connection" class="button button-secondary">
+                            <span class="dashicons dashicons-admin-plugins" style="vertical-align: middle;"></span>
+                            Test Connection
+                        </button>
+                        <span id="connection-test-spinner" class="spinner" style="float: none; margin: 0 10px; display: none;"></span>
+                        
+                        <div id="connection-test-result" style="margin-top: 15px; display: none;"></div>
+                        
+                        <p class="description">
+                            Click to test your Graylog API connection. This will verify:
+                            <br>• API URL is reachable
+                            <br>• API Token is valid
+                            <br>• Search endpoint is working
+                        </p>
+                    </td>
+                </tr>
             </table>
             
             <h2>Advanced Settings</h2>
@@ -250,6 +269,95 @@ function graylog_search_settings_page() {
         
         <script>
         jQuery(document).ready(function($) {
+            // Test Graylog Connection
+            $('#test-graylog-connection').on('click', function() {
+                var $button = $(this);
+                var $spinner = $('#connection-test-spinner');
+                var $result = $('#connection-test-result');
+                
+                // Get current form values (not saved yet)
+                var apiUrl = $('#graylog_api_url').val();
+                var apiToken = $('#graylog_api_token').val();
+                var disableSSL = $('#disable_ssl_verify').is(':checked');
+                
+                if (!apiUrl || !apiToken) {
+                    $result.html('<div class="notice notice-error inline"><p><strong>Error:</strong> Please enter both API URL and Token before testing.</p></div>').show();
+                    return;
+                }
+                
+                $button.prop('disabled', true);
+                $spinner.css('visibility', 'visible');
+                $result.html('').hide();
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'graylog_test_connection',
+                        nonce: '<?php echo wp_create_nonce('graylog-test-connection'); ?>',
+                        api_url: apiUrl,
+                        api_token: apiToken,
+                        disable_ssl: disableSSL ? '1' : '0'
+                    },
+                    timeout: 30000,
+                    success: function(response) {
+                        if (response.success) {
+                            var html = '<div class="notice notice-success inline" style="padding: 15px;"><p><strong>✅ Connection Successful!</strong></p>';
+                            html += '<ul style="margin: 10px 0 0 20px;">';
+                            
+                            if (response.data.graylog_version) {
+                                html += '<li><strong>Graylog Version:</strong> ' + response.data.graylog_version + '</li>';
+                            }
+                            if (response.data.hostname) {
+                                html += '<li><strong>Server Hostname:</strong> ' + response.data.hostname + '</li>';
+                            }
+                            if (response.data.message_count !== undefined) {
+                                html += '<li><strong>Test Search:</strong> Found ' + response.data.message_count + ' messages</li>';
+                            }
+                            if (response.data.response_time) {
+                                html += '<li><strong>Response Time:</strong> ' + response.data.response_time + 'ms</li>';
+                            }
+                            
+                            html += '</ul></div>';
+                            $result.html(html).show();
+                        } else {
+                            var html = '<div class="notice notice-error inline" style="padding: 15px;"><p><strong>❌ Connection Failed</strong></p>';
+                            html += '<p><strong>Error:</strong> ' + (response.data.message || 'Unknown error') + '</p>';
+                            
+                            if (response.data.details) {
+                                html += '<p style="margin-top: 10px;"><strong>Details:</strong></p>';
+                                html += '<pre style="background: #f0f0f1; padding: 10px; border-radius: 3px; font-size: 12px; overflow-x: auto;">' + response.data.details + '</pre>';
+                            }
+                            
+                            if (response.data.suggestions) {
+                                html += '<p style="margin-top: 10px;"><strong>Suggestions:</strong></p><ul style="margin-left: 20px;">';
+                                response.data.suggestions.forEach(function(suggestion) {
+                                    html += '<li>' + suggestion + '</li>';
+                                });
+                                html += '</ul>';
+                            }
+                            
+                            html += '</div>';
+                            $result.html(html).show();
+                        }
+                    },
+                    error: function(jqXHR, textStatus) {
+                        var html = '<div class="notice notice-error inline"><p><strong>❌ Request Failed</strong></p>';
+                        html += '<p>Status: ' + textStatus + '</p>';
+                        if (textStatus === 'timeout') {
+                            html += '<p>The request timed out after 30 seconds. Check if your Graylog server is accessible.</p>';
+                        }
+                        html += '</div>';
+                        $result.html(html).show();
+                    },
+                    complete: function() {
+                        $button.prop('disabled', false);
+                        $spinner.css('visibility', 'hidden');
+                    }
+                });
+            });
+            
+            // Check for Updates
             $('#check-for-updates').on('click', function() {
                 var $button = $(this);
                 var $status = $('#update-check-status');
@@ -299,5 +407,136 @@ function graylog_search_settings_page() {
         </ol>
     </div>
     <?php
+}
+
+// AJAX handler for testing Graylog connection
+add_action('wp_ajax_graylog_test_connection', 'graylog_test_connection_handler');
+function graylog_test_connection_handler() {
+    check_ajax_referer('graylog-test-connection', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(array('message' => 'Insufficient permissions'));
+        return;
+    }
+    
+    $start_time = microtime(true);
+    
+    // Get test parameters from AJAX request (not from database)
+    $api_url = sanitize_text_field($_POST['api_url']);
+    $api_token = sanitize_text_field($_POST['api_token']);
+    $disable_ssl = isset($_POST['disable_ssl']) && $_POST['disable_ssl'] === '1';
+    
+    // Ensure /api is present
+    if (strpos($api_url, '/api') === false) {
+        $api_url .= '/api';
+    }
+    
+    $suggestions = array();
+    
+    // Test 1: System endpoint
+    $response = wp_remote_get($api_url . '/system', array(
+        'headers' => array(
+            'Authorization' => 'Basic ' . base64_encode($api_token . ':token'),
+            'Accept' => 'application/json',
+            'X-Requested-By' => 'Graylog-Search-Plugin'
+        ),
+        'timeout' => 15,
+        'sslverify' => !$disable_ssl
+    ));
+    
+    if (is_wp_error($response)) {
+        $error_message = $response->get_error_message();
+        
+        // Provide helpful suggestions based on error
+        if (strpos($error_message, 'cURL error 60') !== false || strpos($error_message, 'SSL') !== false) {
+            $suggestions[] = 'SSL certificate error detected. Try enabling "Disable SSL Verification" checkbox above.';
+        }
+        if (strpos($error_message, 'Could not resolve host') !== false) {
+            $suggestions[] = 'DNS resolution failed. Check if the hostname is correct.';
+        }
+        if (strpos($error_message, 'Connection timed out') !== false || strpos($error_message, 'Operation timed out') !== false) {
+            $suggestions[] = 'Connection timeout. Check if the server is running and accessible.';
+        }
+        if (strpos($error_message, 'Connection refused') !== false) {
+            $suggestions[] = 'Connection refused. Check if Graylog is running on the specified port.';
+        }
+        
+        wp_send_json_error(array(
+            'message' => $error_message,
+            'details' => 'Failed to connect to: ' . $api_url . '/system',
+            'suggestions' => $suggestions
+        ));
+        return;
+    }
+    
+    $status_code = wp_remote_retrieve_response_code($response);
+    
+    if ($status_code === 401) {
+        wp_send_json_error(array(
+            'message' => 'Authentication failed (HTTP 401)',
+            'details' => 'The API token is invalid or expired.',
+            'suggestions' => array(
+                'Generate a new API token in Graylog: System → Users → [Your User] → Edit Tokens',
+                'Make sure you copied the entire token',
+                'Check that the token has proper permissions'
+            )
+        ));
+        return;
+    }
+    
+    if ($status_code !== 200) {
+        $body = wp_remote_retrieve_body($response);
+        wp_send_json_error(array(
+            'message' => 'Graylog returned HTTP ' . $status_code,
+            'details' => substr($body, 0, 500),
+            'suggestions' => array(
+                'Check if the API URL is correct',
+                'Verify Graylog is running properly'
+            )
+        ));
+        return;
+    }
+    
+    // Parse system info
+    $body = wp_remote_retrieve_body($response);
+    $system_data = json_decode($body, true);
+    
+    $graylog_version = isset($system_data['version']) ? $system_data['version'] : 'Unknown';
+    $hostname = isset($system_data['hostname']) ? $system_data['hostname'] : 'Unknown';
+    
+    // Test 2: Try a simple search
+    $search_url = add_query_arg(array(
+        'query' => '*',
+        'range' => 300,
+        'limit' => 10
+    ), $api_url . '/search/universal/relative');
+    
+    $search_response = wp_remote_get($search_url, array(
+        'headers' => array(
+            'Authorization' => 'Basic ' . base64_encode($api_token . ':token'),
+            'Accept' => 'application/json',
+            'X-Requested-By' => 'Graylog-Search-Plugin'
+        ),
+        'timeout' => 15,
+        'sslverify' => !$disable_ssl
+    ));
+    
+    $message_count = 0;
+    if (!is_wp_error($search_response) && wp_remote_retrieve_response_code($search_response) === 200) {
+        $search_body = wp_remote_retrieve_body($search_response);
+        $search_data = json_decode($search_body, true);
+        if (isset($search_data['messages'])) {
+            $message_count = count($search_data['messages']);
+        }
+    }
+    
+    $response_time = round((microtime(true) - $start_time) * 1000, 2);
+    
+    wp_send_json_success(array(
+        'graylog_version' => $graylog_version,
+        'hostname' => $hostname,
+        'message_count' => $message_count,
+        'response_time' => $response_time
+    ));
 }
 
