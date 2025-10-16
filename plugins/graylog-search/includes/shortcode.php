@@ -45,16 +45,13 @@ function graylog_search_shortcode($atts) {
     ob_start();
     ?>
     <div class="graylog-search-shortcode" id="<?php echo esc_attr($instance_id); ?>">
-        <!-- Header with tools -->
+        <!-- Header with connection status -->
         <div class="graylog-search-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
             <h2 style="margin: 0; font-size: 20px;">Graylog Search</h2>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <span id="connection-status" class="connection-status" title="Connection status">
                     <span class="status-dot status-unknown"></span>
                 </span>
-                <button type="button" class="button button-large graylog-dark-mode-toggle" title="Toggle dark mode">
-                    <span class="dashicons dashicons-admin-appearance"></span>
-                </button>
             </div>
         </div>
         
@@ -105,14 +102,16 @@ function graylog_search_shortcode($atts) {
                 <div class="graylog-tab-content" data-content="query_builder">
                     <div class="tab-help-text" style="font-size: 13px; padding: 10px; background: #f0f0ff; border-left: 3px solid #6600cc; margin-bottom: 15px;">
                         <span class="dashicons dashicons-info" style="color: #6600cc;"></span>
-                        <strong>Query Builder:</strong> Build queries visually (applies to Advanced tab)
+                        <strong>Query Builder:</strong> Opens modal automatically (applies to Advanced tab)
                     </div>
                     <div id="query-builder-inline-container-shortcode">
-                        <p style="text-align: center; padding: 20px;">
-                            <button type="button" id="init-query-builder" class="button button-primary">
-                                <span class="dashicons dashicons-editor-code"></span> Initialize Query Builder
-                            </button>
-                        </p>
+                        <div style="padding: 30px; text-align: center; background: #f5f5f5; border-radius: 5px;">
+                            <span class="dashicons dashicons-editor-code" style="font-size: 40px; color: #666; margin-bottom: 15px; display: block;"></span>
+                            <p style="color: #666; font-size: 13px; margin: 0;">
+                                Query builder opens automatically.<br>
+                                Use "Apply Query" to populate Advanced tab.
+                            </p>
+                        </div>
                     </div>
                 </div>
                 

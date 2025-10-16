@@ -133,15 +133,17 @@ function graylog_search_page() {
                 <div class="graylog-tab-content" data-content="query_builder">
                     <div class="tab-help-text">
                         <span class="dashicons dashicons-info"></span>
-                        <strong>Query Builder:</strong> Build complex queries visually using drag-and-drop. Click "Apply Query" to populate the Advanced tab.
+                        <strong>Query Builder:</strong> Build complex queries visually using drag-and-drop. The query builder will open in a modal when you activate this tab.
                     </div>
                     <div id="query-builder-inline-container">
-                        <!-- Query builder will be rendered here by JavaScript -->
-                        <p style="text-align: center; padding: 20px;">
-                            <button type="button" id="init-query-builder" class="button button-primary">
-                                <span class="dashicons dashicons-editor-code"></span> Initialize Query Builder
-                            </button>
-                        </p>
+                        <!-- Query builder will be triggered automatically when tab is clicked -->
+                        <div style="padding: 40px; text-align: center; background: #f5f5f5; border-radius: 5px;">
+                            <span class="dashicons dashicons-editor-code" style="font-size: 48px; color: #666; margin-bottom: 20px; display: block;"></span>
+                            <p style="color: #666; font-size: 14px; margin: 0;">
+                                The visual query builder will open automatically.<br>
+                                Click "Apply Query" in the modal to populate the Advanced tab.
+                            </p>
+                        </div>
                     </div>
                 </div>
                 

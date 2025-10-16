@@ -186,22 +186,3 @@ function graylog_get_quick_filters_handler() {
     
     wp_send_json_success(array('filters' => graylog_get_quick_filters()));
 }
-
-// Save dark mode preference
-add_action('wp_ajax_graylog_save_dark_mode', 'graylog_save_dark_mode_handler');
-function graylog_save_dark_mode_handler() {
-    check_ajax_referer('graylog_search_nonce', 'nonce');
-    
-    if (!current_user_can('read')) {
-        wp_send_json_error(array('message' => 'Insufficient permissions'));
-        return;
-    }
-    
-    $enabled = $_POST['enabled'] === '1';
-    
-    // Save to user meta
-    update_user_meta(get_current_user_id(), 'graylog_dark_mode', $enabled);
-    
-    wp_send_json_success(array('message' => 'Dark mode preference saved'));
-}
-

@@ -59,16 +59,44 @@ jQuery(document).ready(function($) {
             $container.find('.graylog-tab-content').removeClass('active');
             $container.find('.graylog-tab-content[data-content="' + tab + '"]').addClass('active');
             
+            // If query builder tab, initialize it
+            if (tab === 'query_builder') {
+                initQueryBuilderInline();
+            }
+            
             // Save preference
             currentSearchMode = tab;
             localStorage.setItem('graylog_search_mode', tab);
         });
+    }
+    
+    // Initialize query builder inline (called when tab is activated)
+    function initQueryBuilderInline() {
+        var $container = $('#query-builder-inline-container, #query-builder-inline-container-shortcode');
         
-        // Initialize query builder button
-        $(document).on('click', '#init-query-builder', function() {
-            // Trigger the existing query builder modal
-            $('#open-query-builder').click();
-        });
+        // Check if already initialized
+        if ($container.find('.query-builder-interface').length > 0) {
+            return; // Already initialized
+        }
+        
+        // Trigger the existing query builder modal to open
+        // but we'll need to adapt it for inline display
+        if (typeof window.graylogQueryBuilder !== 'undefined' && window.graylogQueryBuilder.openModal) {
+            window.graylogQueryBuilder.openModal();
+        } else {
+            // Fallback: show a message
+            $container.html('<div style="padding: 40px; text-align: center;">' +
+                '<p style="margin-bottom: 20px;">Query Builder</p>' +
+                '<p><em>Loading visual query builder...</em></p>' +
+                '</div>');
+            
+            // Try to trigger the modal after a short delay
+            setTimeout(function() {
+                if ($('#open-query-builder').length > 0) {
+                    $('#open-query-builder').click();
+                }
+            }, 100);
+        }
     }
     
     // Handle search form submission - Admin interface
@@ -2196,75 +2224,6 @@ jQuery(document).ready(function($) {
             "'": '&#039;'
         };
         return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-    }
-    
-    // ========================================
-    // Dark Mode Toggle
-    // ========================================
-    
-    // Initialize dark mode
-    initDarkMode();
-    
-    function initDarkMode() {
-        // Check if user has a saved preference
-        var darkMode = localStorage.getItem('graylog-dark-mode');
-        
-        // If no preference, check system preference
-        if (darkMode === null) {
-            darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'enabled' : 'disabled';
-        }
-        
-        // Apply dark mode if enabled
-        if (darkMode === 'enabled') {
-            $('body').addClass('graylog-dark-mode');
-        }
-        
-        // Add toggle button
-        var toggleHtml = '<div class="graylog-dark-mode-toggle" title="Toggle dark mode">' +
-                         '<span class="dark-mode-icon">' + (darkMode === 'enabled' ? '☀️' : '🌙') + '</span>' +
-                         '</div>';
-        
-        // Only add if not already present
-        if ($('.graylog-dark-mode-toggle').length === 0) {
-            $('body').append(toggleHtml);
-        }
-    }
-    
-    // Handle dark mode toggle click
-    $(document).on('click', '.graylog-dark-mode-toggle', function() {
-        var $body = $('body');
-        var $icon = $(this).find('.dark-mode-icon');
-        
-        if ($body.hasClass('graylog-dark-mode')) {
-            // Disable dark mode
-            $body.removeClass('graylog-dark-mode');
-            localStorage.setItem('graylog-dark-mode', 'disabled');
-            $icon.text('🌙');
-            
-            // Save to server
-            saveDarkModePreference(false);
-        } else {
-            // Enable dark mode
-            $body.addClass('graylog-dark-mode');
-            localStorage.setItem('graylog-dark-mode', 'enabled');
-            $icon.text('☀️');
-            
-            // Save to server
-            saveDarkModePreference(true);
-        }
-    });
-    
-    // Save dark mode preference to server
-    function saveDarkModePreference(enabled) {
-        $.ajax({
-            url: graylogSearch.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'graylog_save_dark_mode',
-                nonce: graylogSearch.nonce,
-                enabled: enabled ? '1' : '0'
-            }
-        });
     }
 });
 
