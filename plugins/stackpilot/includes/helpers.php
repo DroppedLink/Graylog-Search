@@ -58,6 +58,18 @@ function sp_rate_limit_check($action = 'default', $limit = 60) {
 	return true;
 }
 
+function sp_is_container_protected($containerName) {
+	if (!get_option('sp_protect_enabled', 1)) { return false; }
+	$name = ltrim((string) $containerName, '/');
+	$patterns = (array) get_option('sp_protect_patterns', array('portainer','traefik','nginx-proxy','caddy'));
+	foreach ($patterns as $pattern) {
+		$pattern = trim($pattern);
+		if ($pattern === '') { continue; }
+		if (stripos($name, $pattern) !== false) { return true; }
+	}
+	return false;
+}
+
 // No legacy wrappers
 
 

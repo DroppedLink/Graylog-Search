@@ -70,7 +70,11 @@ function sp_admin_enqueue_assets($hook) {
 	wp_localize_script('sp-admin', 'sp', array(
 		'ajaxUrl' => admin_url('admin-ajax.php'),
 		'nonce' => wp_create_nonce('sp_nonce'),
-		'logsTail' => intval(get_option('sp_logs_tail', 200))
+		'logsTail' => intval(get_option('sp_logs_tail', 200)),
+		'protect' => array(
+			'enabled' => (bool) get_option('sp_protect_enabled', 1),
+			'patterns' => (array) get_option('sp_protect_patterns', array('portainer','traefik','nginx-proxy','caddy'))
+		)
 	));
 }
 

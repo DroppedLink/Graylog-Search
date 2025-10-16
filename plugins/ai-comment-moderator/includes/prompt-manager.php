@@ -307,19 +307,27 @@ class AI_Comment_Moderator_Prompt_Manager {
         $processed .= "\n\n[IMPORTANT] Your response must include:
 1. Decision: APPROVE, SPAM, or HOLD
 2. Confidence: 0-100
-3. Reason Code: Choose ONE number (1-10):
+3. Reason Code: Choose ONE number (1-10) MATCHING your decision:
+
+For SPAM decisions, use codes:
    1 = Obvious spam/bot
    2 = Malicious links
-   3 = Toxic language
-   4 = Off-topic
    5 = Multiple suspicious URLs
    6 = Low quality
    7 = Duplicate
    8 = Suspicious patterns
-   9 = Legitimate
-   10 = High quality
 
-Format: Decision: [APPROVE/SPAM/HOLD] | Confidence: [0-100] | Code: [1-10] | Reason: [brief explanation]";
+For TOXIC/HOLD decisions, use codes:
+   3 = Toxic language
+   4 = Off-topic
+
+For APPROVE decisions, use codes:
+   9 = Legitimate contribution
+   10 = High quality content
+
+Format: Decision: [APPROVE/SPAM/HOLD] | Confidence: [0-100] | Code: [1-10] | Reason: [brief explanation]
+
+CRITICAL: Your reason code MUST match your decision (e.g., don't use code 9 for SPAM)";
         
         return $processed;
     }
@@ -348,6 +356,9 @@ Format: Decision: [APPROVE/SPAM/HOLD] | Confidence: [0-100] | Code: [1-10] | Rea
                 $result['reason_code'] = $code;
             }
         }
+        
+        // Validate reason code matches decision (after decision is determined below)
+        // This will be checked after we know the decision
         
         // Extract reason explanation (Reason: text)
         if (preg_match('/Reason:\s*(.+?)(?:\||$)/is', $original_response, $reason_match)) {
@@ -384,6 +395,20 @@ Format: Decision: [APPROVE/SPAM/HOLD] | Confidence: [0-100] | Code: [1-10] | Rea
             $result['action'] = 'hold';
             if (!isset($conf_match)) {
                 $result['confidence'] = 0.5;
+            }
+        }
+        
+        // Validate reason code matches decision (v2.2.0+)
+        if (!empty($result['reason_code']) && !empty($result['decision'])) {
+            if (!AI_Comment_Moderator_Reason_Codes::is_code_valid_for_decision($result['reason_code'], $result['decision'])) {
+                // Invalid combination - log warning and clear the code
+                error_log(sprintf(
+                    'AI Comment Moderator: Invalid reason code %d for decision "%s". Code cleared.',
+                    $result['reason_code'],
+                    $result['decision']
+                ));
+                $result['reason_code'] = null;
+                $result['reason_text'] = 'Invalid code/decision combination';
             }
         }
         

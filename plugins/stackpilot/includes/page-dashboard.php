@@ -55,6 +55,13 @@ function sp_dashboard_page() {
 		var autoRefresh = false;
 		var autoRefreshTimer = null;
 
+		function isProtectedName(name){
+			var patterns = (sp && sp.protect && sp.protect.patterns) ? sp.protect.patterns : ['portainer','traefik','nginx-proxy','caddy'];
+			name = (name||'').replace(/^\//,'').toLowerCase();
+			for (var i=0;i<patterns.length;i++){ if (name.indexOf(String(patterns[i]).toLowerCase()) !== -1) return true; }
+			return false;
+		}
+
 		function renderTable(data){
 			var tbody = $('#sp-table tbody');
 			tbody.empty();
@@ -70,6 +77,7 @@ function sp_dashboard_page() {
 				var actions = $('<td>');
 				['start','stop','restart'].forEach(function(act){
 					var btn = $('<button class="button button-small sp-action">').text(act).attr('data-act', act).attr('data-id', c.Id);
+					if (isProtectedName(name) && (act === 'stop' || act === 'restart')) { btn.prop('disabled', true).attr('title','Protected container'); }
 					actions.append(btn).append(' ');
 				});
 				var logsBtn = $('<button class="button button-small sp-logs">Logs</button>').attr('data-id', c.Id);

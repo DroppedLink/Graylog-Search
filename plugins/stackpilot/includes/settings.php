@@ -155,6 +155,19 @@ function sp_settings_page() {
 					<th scope="row"><label for="sp_logs_tail">Logs tail (lines)</label></th>
 					<td><input name="sp_logs_tail" id="sp_logs_tail" type="number" class="small-text" min="1" value="<?php echo esc_attr((string) get_option('sp_logs_tail', get_option('pv_logs_tail', 200))); ?>"></td>
 				</tr>
+				<tr>
+					<th scope="row">Protect critical containers</th>
+					<td>
+						<label><input name="sp_protect_enabled" type="checkbox" value="1" <?php echo get_option('sp_protect_enabled', 1) ? 'checked' : ''; ?>> Enable protection</label>
+						<p class="description">Prevents stop/restart of containers matching patterns (e.g., Portainer, Traefik) to avoid accidental lockout.</p>
+						<br>
+						<label for="sp_protect_patterns">Protected name patterns (one per line)</label><br>
+						<textarea name="sp_protect_patterns" id="sp_protect_patterns" class="large-text code" rows="5" placeholder="portainer
+traefik
+nginx-proxy
+caddy"><?php echo esc_textarea(implode("\n", (array) get_option('sp_protect_patterns', array('portainer','traefik','nginx-proxy','caddy')))); ?></textarea>
+					</td>
+				</tr>
 			</table>
 			<p class="submit">
 				<input type="submit" name="sp_save_general" class="button button-primary" value="Save Settings">
@@ -240,6 +253,10 @@ function sp_settings_page() {
 		check_admin_referer('sp_settings_nonce');
 		update_option('sp_cache_ttl', max(0, intval($_POST['sp_cache_ttl'] ?? get_option('sp_cache_ttl', 30))));
 		update_option('sp_logs_tail', max(1, intval($_POST['sp_logs_tail'] ?? get_option('sp_logs_tail', 200))));
+		update_option('sp_protect_enabled', !empty($_POST['sp_protect_enabled']) ? 1 : 0);
+		$patterns_raw = isset($_POST['sp_protect_patterns']) ? (string) $_POST['sp_protect_patterns'] : '';
+		$patterns = array_values(array_filter(array_map('trim', preg_split("/\r?\n/", $patterns_raw))));
+		update_option('sp_protect_patterns', $patterns);
 		echo '<div class="notice notice-success"><p>Settings saved.</p></div>';
 	}
 }

@@ -37,6 +37,18 @@ function sp_container_action() {
 	$pathBase = '/api/endpoints/' . $endpointId . '/docker/containers/' . rawurlencode($containerId);
 	$validOps = array('start', 'stop', 'restart');
 	if (!in_array($op, $validOps, true)) { wp_send_json_error(array('message' => 'Unsupported operation')); }
+	// Protection: block stop/restart for protected containers
+	$inspect = sp_api_request($env, $pathBase . '/json', 'GET');
+	if (!is_wp_error($inspect) && is_array($inspect)) {
+		$names = array();
+		if (!empty($inspect['Name'])) { $names[] = $inspect['Name']; }
+		if (!empty($inspect['Names']) && is_array($inspect['Names'])) { $names = array_merge($names, $inspect['Names']); }
+		foreach ($names as $nm) {
+			if (sp_is_container_protected($nm) && in_array($op, array('stop','restart'), true)) {
+				wp_send_json_error(array('message' => 'This container is protected and cannot be ' . $op . 'ed.'));
+			}
+		}
+	}
 	$res = sp_api_request($env, $pathBase . '/' . $op, 'POST');
 	if (is_wp_error($res)) { wp_send_json_error(array('message' => $res->get_error_message())); }
 	delete_transient('sp_containers_' . ($env['key'] ?? $envId));

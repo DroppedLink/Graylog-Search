@@ -56,6 +56,38 @@ class AI_Comment_Moderator_Reason_Codes {
     }
     
     /**
+     * Validate that a reason code matches the decision
+     * 
+     * @param int $code The reason code
+     * @param string $decision The AI decision (spam/approve/hold/toxic)
+     * @return bool True if code matches decision type
+     */
+    public static function is_code_valid_for_decision($code, $decision) {
+        if (!self::is_valid_code($code)) {
+            return false;
+        }
+        
+        $decision = strtolower($decision);
+        $types = self::get_codes_by_type();
+        
+        // Map decisions to valid code groups
+        switch ($decision) {
+            case 'spam':
+                return in_array($code, $types['spam']);
+            
+            case 'toxic':
+            case 'hold':
+                return in_array($code, $types['toxic']) || in_array($code, $types['off_topic']);
+            
+            case 'approve':
+                return in_array($code, $types['legitimate']);
+            
+            default:
+                return false;
+        }
+    }
+    
+    /**
      * Get codes grouped by decision type (for reference)
      * 
      * @return array Grouped codes
