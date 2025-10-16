@@ -2,6 +2,147 @@
 
 All notable changes to the Graylog Search WordPress plugin will be documented in this file.
 
+## [1.12.0] - 2025-10-16 - Major UI Redesign: Simplified Search Interface
+
+### 🎯 Major Change - Unified Search Interface
+**Breaking Change**: Removed separate "Hostname" and "Search Terms" fields in favor of a unified, mode-based search approach.
+
+### Added - 3-Tab Search Interface
+- **Simple Mode** (Default):
+  - Single search box that searches across ALL log fields automatically
+  - Searches: `message`, `fqdn`, `source`, `level`, `facility`, `application_name`
+  - Ideal for non-technical users who just want to find logs
+  - Auto-wildcard matching for partial terms
+  - No need to know field names or Lucene syntax
+  
+- **Advanced Mode**:
+  - Full Lucene query syntax control
+  - Users write complete queries like: `fqdn:server* AND message:error`
+  - Boolean operators: `AND`, `OR`, `NOT`
+  - Field-specific searches: `fieldname:value`
+  - Power user mode for complex searches
+  
+- **Query Builder Mode** (Beta):
+  - Visual drag-and-drop query builder as an inline tab
+  - No longer a separate modal popup
+  - Builds complex queries visually
+  - "Apply Query" button populates Advanced tab
+  - Perfect bridge between Simple and Advanced modes
+
+### UI Improvements
+- **Tab-Based Navigation**: Clean, modern tab interface with visual feedback
+- **Beta Badge**: Query Builder clearly marked as "Beta" feature
+- **Help Text**: Each tab includes contextual help and examples
+- **Mode Persistence**: Selected tab saved to localStorage
+- **Color-Coded Tabs**: Visual distinction between Simple (blue), Advanced (orange), Query Builder (purple)
+
+### Backend Changes
+- **Unified Query Parameter**: `search_query` replaces `fqdn` and `search_terms`
+- **Search Mode Parameter**: `search_mode` (simple/advanced/query_builder)
+- **Smart Query Building**:
+  - Simple mode: Builds multi-field OR queries automatically
+  - Advanced mode: Passes query through as-is
+  - Query builder mode: Uses advanced query format
+- **Filter Out**: Remains separate (client-side filtering after results)
+
+### JavaScript Updates
+- **Tab Switching**: Smooth tab transitions with active state management
+- **Query Extraction**: Intelligently gets query from active tab
+- **Auto-Highlight**: Only in Simple mode (Advanced/QB too complex)
+- **Saved/Recent Searches**: Updated to store mode + query
+- **Mode Indicators**: Recent searches show `[Simple]`, `[Adv]`, or `[QB]` badges
+
+### Styling
+- **Modern Tab Design**: Clean, professional appearance
+- **Dark Mode Support**: All new UI elements support dark mode
+- **Responsive Layout**: Tabs work on mobile and desktop
+- **Hover Effects**: Smooth transitions on tab hover
+- **Active States**: Clear visual feedback for selected tab
+
+### User Benefits
+✅ **Simpler for Beginners**: Just type what you're looking for  
+✅ **Powerful for Experts**: Full Lucene control when needed  
+✅ **Visual for Builders**: Drag-and-drop query construction  
+✅ **Cleaner Interface**: Less visual clutter, focused workflow  
+✅ **Better Onboarding**: Progressive complexity (start simple, learn advanced)  
+
+### Migration Notes
+⚠️ **No Backward Compatibility**: This is a breaking change
+- Users will need to re-create saved searches in new format
+- Recent searches will display but may need re-running
+- Quick filters automatically updated to new format
+
+### Technical Details
+- Modified: `includes/ajax-handler.php`
+  - `graylog_build_query()` rewritten for mode-based queries
+  - Simple mode: Multi-field OR searches with wildcards
+  - Advanced mode: Direct Lucene passthrough
+- Modified: `includes/search-page.php`
+  - 3-tab interface with mode-specific content
+  - Inline Query Builder container
+  - Help text for each mode
+- Modified: `includes/shortcode.php`
+  - Same 3-tab interface for embedded searches
+  - Full feature parity maintained
+- Modified: `assets/js/search.js`
+  - `initializeSearchTabs()` for tab management
+  - `getActiveSearchQuery()` extracts from correct tab
+  - `performSearch()` sends mode and query
+  - Updated saved/recent search loading
+- Modified: `assets/css/style.css`
+  - 100+ lines of new tab styles
+  - Beta badge styling
+  - Dark mode support for all new elements
+- Modified: `includes/saved-searches.php`
+  - Updated to store `search_query` and `search_mode`
+  - Quick filters use Simple mode
+- Modified: `includes/search-history.php`
+  - Automatically handles new format (serialized params)
+- Modified: `graylog-search.php` - Version 1.12.0
+
+### Files Changed
+- `graylog-search.php` (version bump)
+- `includes/ajax-handler.php` (new query builder)
+- `includes/search-page.php` (3-tab UI)
+- `includes/shortcode.php` (3-tab UI)
+- `includes/saved-searches.php` (new format)
+- `assets/js/search.js` (tab logic + mode handling)
+- `assets/css/style.css` (tab styles)
+- `CHANGELOG.md` (this file)
+
+## [1.11.2] - 2025-10-16 - Test Connection Feature
+
+### Added - Connection Testing
+- **Test Connection Button**: New button in plugin Settings page
+- **Live Diagnostics**: Tests Graylog API connectivity in real-time
+- **Smart Suggestions**: Provides specific fixes for common errors
+- **No Save Required**: Tests current form values without saving
+- **Detailed Feedback**: Shows Graylog version, hostname, response time
+
+### Test Connection Details
+- Tests System endpoint for basic connectivity
+- Tests Search endpoint to verify API access
+- Validates API URL, token, and SSL settings
+- Provides specific error messages:
+  - SSL certificate issues → suggest disabling SSL verification
+  - 401 Unauthorized → suggest checking API token
+  - DNS resolution failures → suggest checking hostname
+  - Connection timeouts → suggest checking server status
+- Displays success metrics:
+  - Graylog version
+  - Server hostname
+  - Sample message count
+  - Response time in milliseconds
+
+### Technical
+- Modified: `includes/settings.php`
+  - Added Test Connection button and results container
+  - Added JavaScript for AJAX testing
+  - New AJAX handler: `graylog_test_connection_handler`
+  - Tests both `/system` and `/search/messages` endpoints
+- Deleted: `test-graylog-connection.php` (functionality integrated)
+- Modified: `graylog-search.php` - Version 1.11.2
+
 ## [1.11.1] - 2025-10-15 - Bugfix: Shortcode Feature Parity
 
 ### Fixed - Shortcode Missing Features

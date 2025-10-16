@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Graylog Search
  * Description: Simple interface for non-technical users to search Graylog logs via API
- * Version: 1.11.2
+ * Version: 1.12.0
  * Author: Your Name
  */
 
@@ -11,7 +11,7 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('GRAYLOG_SEARCH_VERSION', '1.11.2');
+define('GRAYLOG_SEARCH_VERSION', '1.12.0');
 define('GRAYLOG_SEARCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GRAYLOG_SEARCH_PLUGIN_URL', plugin_dir_url(__FILE__));
 

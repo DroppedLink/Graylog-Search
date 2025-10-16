@@ -60,106 +60,125 @@ function graylog_search_shortcode($atts) {
         
         <div class="graylog-search-compact-form">
             <form class="graylog-search-form">
-                <div class="graylog-form-row">
-                    <div class="graylog-form-col">
-                        <label for="<?php echo esc_attr($instance_id); ?>_fqdn">Hostname:</label>
-                        <textarea id="<?php echo esc_attr($instance_id); ?>_fqdn" 
-                                  class="graylog-input search-fqdn"
-                                  rows="3"
-                                  placeholder="e.g., server01 or server01.example.com&#10;Multiple: one per line or comma-separated"></textarea>
+                <!-- Search Mode Tabs -->
+                <div class="graylog-search-tabs">
+                    <button type="button" class="graylog-tab-btn active" data-tab="simple">
+                        Simple
+                    </button>
+                    <button type="button" class="graylog-tab-btn" data-tab="advanced">
+                        Advanced
+                    </button>
+                    <button type="button" class="graylog-tab-btn" data-tab="query_builder">
+                        Query Builder <span class="beta-badge">Beta</span>
+                    </button>
+                </div>
+                
+                <!-- Tab Content: Simple Mode -->
+                <div class="graylog-tab-content active" data-content="simple">
+                    <div class="tab-help-text" style="font-size: 13px; padding: 10px; background: #f0f6fc; border-left: 3px solid #0066cc; margin-bottom: 15px;">
+                        <span class="dashicons dashicons-info" style="color: #0066cc;"></span>
+                        <strong>Simple Mode:</strong> Search across all fields automatically
                     </div>
-                    
-                    <div class="graylog-form-col">
-                        <label for="<?php echo esc_attr($instance_id); ?>_terms">Search Terms:</label>
-                        <textarea id="<?php echo esc_attr($instance_id); ?>_terms" 
-                                  class="graylog-input search-terms"
-                                  rows="3"
-                                  placeholder="e.g., error, warning&#10;Multiple: one per line or comma-separated"></textarea>
+                    <label for="<?php echo esc_attr($instance_id); ?>_query_simple">Search Query:</label>
+                    <textarea id="<?php echo esc_attr($instance_id); ?>_query_simple" 
+                              class="graylog-input search-query-input"
+                              rows="3"
+                              placeholder="e.g., server01, error, 192.168.1.1&#10;Multiple: one per line or comma-separated"></textarea>
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">Examples: <code>server01</code>, <code>error</code></p>
+                </div>
+                
+                <!-- Tab Content: Advanced Mode -->
+                <div class="graylog-tab-content" data-content="advanced">
+                    <div class="tab-help-text" style="font-size: 13px; padding: 10px; background: #fff5e6; border-left: 3px solid #ff9900; margin-bottom: 15px;">
+                        <span class="dashicons dashicons-info" style="color: #ff9900;"></span>
+                        <strong>Advanced Mode:</strong> Full Lucene syntax control
                     </div>
-                    
-                    <div class="graylog-form-col">
-                        <label for="<?php echo esc_attr($instance_id); ?>_filter">Filter Out:</label>
-                        <textarea id="<?php echo esc_attr($instance_id); ?>_filter" 
-                                  class="graylog-input filter-out"
-                                  rows="3"
-                                  placeholder="e.g., debug, info&#10;Multiple: one per line or comma-separated"></textarea>
+                    <label for="<?php echo esc_attr($instance_id); ?>_query_advanced">Lucene Query:</label>
+                    <textarea id="<?php echo esc_attr($instance_id); ?>_query_advanced" 
+                              class="graylog-input search-query-input"
+                              rows="3"
+                              placeholder="e.g., fqdn:server* AND message:error"></textarea>
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">Examples: <code>fqdn:server* AND message:error</code></p>
+                </div>
+                
+                <!-- Tab Content: Query Builder -->
+                <div class="graylog-tab-content" data-content="query_builder">
+                    <div class="tab-help-text" style="font-size: 13px; padding: 10px; background: #f0f0ff; border-left: 3px solid #6600cc; margin-bottom: 15px;">
+                        <span class="dashicons dashicons-info" style="color: #6600cc;"></span>
+                        <strong>Query Builder:</strong> Build queries visually (applies to Advanced tab)
+                    </div>
+                    <div id="query-builder-inline-container-shortcode">
+                        <p style="text-align: center; padding: 20px;">
+                            <button type="button" id="init-query-builder" class="button button-primary">
+                                <span class="dashicons dashicons-editor-code"></span> Initialize Query Builder
+                            </button>
+                        </p>
                     </div>
                 </div>
                 
-                <div class="graylog-form-row">
-                    <div class="graylog-form-col">
-                        <label for="<?php echo esc_attr($instance_id); ?>_timerange">Time Range:</label>
-                        <select id="<?php echo esc_attr($instance_id); ?>_timerange" class="graylog-select time-range">
-                            <option value="60">Last Hour</option>
-                            <option value="240">Last 4 Hours</option>
-                            <option value="480">Last 8 Hours</option>
-                            <option value="720">Last 12 Hours</option>
-                            <option value="1440" selected>Last Day</option>
-                            <option value="4320">Last 3 Days</option>
-                            <option value="10080">Last Week</option>
-                        </select>
+                <!-- Common Fields -->
+                <div style="margin-top: 15px;">
+                    <div class="graylog-form-row">
+                        <div class="graylog-form-col">
+                            <label for="<?php echo esc_attr($instance_id); ?>_filter">Filter Out:</label>
+                            <textarea id="<?php echo esc_attr($instance_id); ?>_filter" 
+                                      class="graylog-input filter-out"
+                                      rows="2"
+                                      placeholder="e.g., debug, info"></textarea>
+                        </div>
+                        
+                        <div class="graylog-form-col">
+                            <label for="<?php echo esc_attr($instance_id); ?>_timerange">Time Range:</label>
+                            <select id="<?php echo esc_attr($instance_id); ?>_timerange" class="graylog-select time-range">
+                                <option value="60">Last Hour</option>
+                                <option value="240">Last 4 Hours</option>
+                                <option value="480">Last 8 Hours</option>
+                                <option value="720">Last 12 Hours</option>
+                                <option value="1440" selected>Last Day</option>
+                                <option value="4320">Last 3 Days</option>
+                                <option value="10080">Last Week</option>
+                            </select>
+                        </div>
+                        
+                        <div class="graylog-form-col">
+                            <label for="<?php echo esc_attr($instance_id); ?>_limit">Result Limit:</label>
+                            <select id="<?php echo esc_attr($instance_id); ?>_limit" class="graylog-select result-limit">
+                                <option value="50">50 results</option>
+                                <option value="100" selected>100 results</option>
+                                <option value="250">250 results</option>
+                                <option value="500">500 results</option>
+                            </select>
+                        </div>
                     </div>
                     
-                    <div class="graylog-form-col">
-                        <label for="<?php echo esc_attr($instance_id); ?>_limit">Result Limit:</label>
-                        <select id="<?php echo esc_attr($instance_id); ?>_limit" class="graylog-select result-limit">
-                            <option value="50">50 results</option>
-                            <option value="100" selected>100 results</option>
-                            <option value="250">250 results</option>
-                            <option value="500">500 results</option>
-                        </select>
-                    </div>
-                    
-                    <div class="graylog-form-col graylog-form-buttons">
-                        <button type="submit" class="graylog-btn graylog-btn-primary">Search Logs</button>
-                        <button type="button" class="graylog-btn graylog-btn-secondary clear-search">Clear</button>
-                    </div>
-                </div>
-                
-                <!-- Advanced Search Tools Row -->
-                <div class="graylog-form-row" style="margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <!-- Regex Mode -->
-                    <div class="regex-mode-controls">
-                        <label title="Enable regex search mode">
-                            <input type="checkbox" id="regex-mode-toggle"> Regex Mode
-                        </label>
-                    </div>
-                    
-                    <!-- Regex Helper Buttons -->
-                    <div class="regex-helper-buttons" style="display: none;">
-                        <button type="button" class="button button-small" id="regex-pattern-library-btn">
-                            <span class="dashicons dashicons-book"></span> Pattern Library
-                        </button>
-                        <button type="button" class="button button-small" id="regex-tester-btn">
-                            <span class="dashicons dashicons-admin-tools"></span> Test Regex
-                        </button>
-                        <button type="button" class="button button-small" id="regex-syntax-btn">
-                            <span class="dashicons dashicons-editor-help"></span> Syntax Help
-                        </button>
-                    </div>
-                    
-                    <!-- Visual Query Builder Button -->
-                    <button type="button" class="button button-large" id="open-query-builder">
-                        <span class="dashicons dashicons-editor-code"></span> Visual Query Builder
-                    </button>
-                    
-                    <!-- Search History Button -->
-                    <button type="button" class="button button-large" id="view-search-history">
-                        <span class="dashicons dashicons-backup"></span> Search History
-                    </button>
-                    
-                    <!-- Auto-Refresh -->
-                    <div class="auto-refresh-controls">
-                        <label>
-                            <input type="checkbox" id="auto-refresh-toggle">
-                            Auto-refresh
-                        </label>
-                        <select id="auto-refresh-interval">
-                            <option value="15">15s</option>
-                            <option value="30" selected>30s</option>
-                            <option value="60">60s</option>
-                            <option value="300">5min</option>
-                        </select>
+                    <div class="graylog-form-row" style="margin-top: 10px;">
+                        <div class="graylog-form-col graylog-form-buttons">
+                            <button type="submit" class="graylog-btn graylog-btn-primary">Search Logs</button>
+                            <button type="button" class="graylog-btn graylog-btn-secondary clear-search">Clear</button>
+                        </div>
+                        
+                        <div class="graylog-form-col">
+                            <!-- Auto-Refresh -->
+                            <div class="auto-refresh-controls">
+                                <label>
+                                    <input type="checkbox" id="auto-refresh-toggle">
+                                    Auto-refresh
+                                </label>
+                                <select id="auto-refresh-interval">
+                                    <option value="15">15s</option>
+                                    <option value="30" selected>30s</option>
+                                    <option value="60">60s</option>
+                                    <option value="300">5min</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="graylog-form-col">
+                            <!-- Search History Button -->
+                            <button type="button" class="button button-secondary" id="view-search-history" style="width: 100%;">
+                                <span class="dashicons dashicons-backup"></span> Search History
+                            </button>
+                        </div>
                     </div>
                 </div>
             </form>

@@ -21,8 +21,8 @@ function graylog_save_search_handler() {
     
     $search_name = sanitize_text_field($_POST['name']);
     $search_data = array(
-        'fqdn' => sanitize_text_field($_POST['fqdn']),
-        'search_terms' => sanitize_text_field($_POST['search_terms']),
+        'search_query' => sanitize_textarea_field($_POST['search_query']),
+        'search_mode' => sanitize_text_field($_POST['search_mode']),
         'filter_out' => sanitize_text_field($_POST['filter_out']),
         'time_range' => intval($_POST['time_range']),
         'created' => current_time('mysql')
@@ -138,8 +138,8 @@ function graylog_get_quick_filters() {
         array(
             'name' => 'Errors (Last Hour)',
             'data' => array(
-                'fqdn' => '',
-                'search_terms' => 'error',
+                'search_query' => 'error',
+                'search_mode' => 'simple',
                 'filter_out' => '',
                 'time_range' => 3600
             )
@@ -147,8 +147,8 @@ function graylog_get_quick_filters() {
         array(
             'name' => 'Warnings (Last Hour)',
             'data' => array(
-                'fqdn' => '',
-                'search_terms' => 'warning',
+                'search_query' => 'warning',
+                'search_mode' => 'simple',
                 'filter_out' => '',
                 'time_range' => 3600
             )
@@ -156,8 +156,8 @@ function graylog_get_quick_filters() {
         array(
             'name' => 'Errors (Today)',
             'data' => array(
-                'fqdn' => '',
-                'search_terms' => 'error',
+                'search_query' => 'error',
+                'search_mode' => 'simple',
                 'filter_out' => '',
                 'time_range' => 86400
             )
@@ -165,8 +165,8 @@ function graylog_get_quick_filters() {
         array(
             'name' => 'All Logs (Last Hour)',
             'data' => array(
-                'fqdn' => '',
-                'search_terms' => '',
+                'search_query' => '',
+                'search_mode' => 'simple',
                 'filter_out' => '',
                 'time_range' => 3600
             )

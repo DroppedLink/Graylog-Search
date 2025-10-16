@@ -70,35 +70,83 @@ function graylog_search_page() {
         
         <div class="graylog-search-form-container">
             <form id="graylog-search-form">
-                <table class="form-table">
-                    <tr>
-                        <th scope="row">
-                            <label for="search_fqdn">Hostname</label>
-                        </th>
-                        <td>
-                            <textarea id="search_fqdn" 
-                                      name="search_fqdn" 
-                                      class="regular-text"
-                                      rows="3"
-                                      placeholder="e.g., server01 or server01.example.com&#10;Multiple hostnames: one per line or comma-separated"></textarea>
-                            <p class="description">Search by hostname or FQDN (one per line or comma-separated)</p>
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <th scope="row">
-                            <label for="search_terms">Additional Search Terms</label>
-                        </th>
-                        <td>
-                            <textarea id="search_terms" 
-                                      name="search_terms" 
-                                      class="regular-text"
-                                      rows="3"
-                                      placeholder="error, warning, specific text&#10;Multiple terms: one per line or comma-separated"></textarea>
-                            <p class="description">Enter additional keywords or phrases (one per line or comma-separated)</p>
-                        </td>
-                    </tr>
-                    
+                <!-- Search Mode Tabs -->
+                <div class="graylog-search-tabs">
+                    <button type="button" class="graylog-tab-btn active" data-tab="simple">
+                        Simple
+                    </button>
+                    <button type="button" class="graylog-tab-btn" data-tab="advanced">
+                        Advanced
+                    </button>
+                    <button type="button" class="graylog-tab-btn" data-tab="query_builder">
+                        Query Builder <span class="beta-badge">Beta</span>
+                    </button>
+                </div>
+                
+                <!-- Tab Content: Simple Mode -->
+                <div class="graylog-tab-content active" data-content="simple">
+                    <div class="tab-help-text">
+                        <span class="dashicons dashicons-info"></span>
+                        <strong>Simple Mode:</strong> Enter any search terms. The plugin will automatically search across all log fields (message, hostname, source, level, etc.).
+                    </div>
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="search_query_simple">Search Query</label>
+                            </th>
+                            <td>
+                                <textarea id="search_query_simple" 
+                                          name="search_query_simple" 
+                                          class="search-query-input regular-text"
+                                          rows="3"
+                                          placeholder="e.g., server01, error, 192.168.1.1&#10;Multiple terms: one per line or comma-separated"></textarea>
+                                <p class="description">Examples: <code>server01</code>, <code>error</code>, <code>192.168.1.1</code></p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Tab Content: Advanced Mode -->
+                <div class="graylog-tab-content" data-content="advanced">
+                    <div class="tab-help-text">
+                        <span class="dashicons dashicons-info"></span>
+                        <strong>Advanced Mode:</strong> Write full Lucene queries with field-specific searches, boolean operators, and wildcards.
+                    </div>
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="search_query_advanced">Lucene Query</label>
+                            </th>
+                            <td>
+                                <textarea id="search_query_advanced" 
+                                          name="search_query_advanced" 
+                                          class="search-query-input regular-text"
+                                          rows="3"
+                                          placeholder="e.g., fqdn:server* AND message:error"></textarea>
+                                <p class="description">Examples: <code>fqdn:server* AND message:error</code>, <code>source:apache AND NOT level:debug</code></p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Tab Content: Query Builder -->
+                <div class="graylog-tab-content" data-content="query_builder">
+                    <div class="tab-help-text">
+                        <span class="dashicons dashicons-info"></span>
+                        <strong>Query Builder:</strong> Build complex queries visually using drag-and-drop. Click "Apply Query" to populate the Advanced tab.
+                    </div>
+                    <div id="query-builder-inline-container">
+                        <!-- Query builder will be rendered here by JavaScript -->
+                        <p style="text-align: center; padding: 20px;">
+                            <button type="button" id="init-query-builder" class="button button-primary">
+                                <span class="dashicons dashicons-editor-code"></span> Initialize Query Builder
+                            </button>
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Common Fields (Always Visible) -->
+                <table class="form-table" style="margin-top: 20px;">
                     <tr>
                         <th scope="row">
                             <label for="filter_out">Filter Out (Exclude)</label>

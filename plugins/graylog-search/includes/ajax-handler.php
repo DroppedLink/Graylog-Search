@@ -23,15 +23,15 @@ function graylog_search_logs_handler() {
     error_log('Graylog Search: Permission check passed');
     
     // Get search parameters
-    $fqdn = sanitize_text_field($_POST['fqdn']);
-    $search_terms = sanitize_text_field($_POST['search_terms']);
+    $search_query = sanitize_textarea_field($_POST['search_query']);
+    $search_mode = sanitize_text_field($_POST['search_mode']); // 'simple', 'advanced', or 'query_builder'
     $filter_out = sanitize_text_field($_POST['filter_out']);
     $time_range = intval($_POST['time_range']);
     $limit = intval($_POST['limit']);
     $offset = isset($_POST['offset']) ? intval($_POST['offset']) : 0;
     
     // Build Graylog query
-    $query = graylog_build_query($fqdn, $search_terms, $filter_out);
+    $query = graylog_build_query($search_query, $search_mode, $filter_out);
     error_log('Graylog Search: Query built: ' . $query);
     
     // Check cache first (5-minute TTL)
@@ -70,8 +70,8 @@ function graylog_search_logs_handler() {
     // Track recent search
     if (is_user_logged_in()) {
         graylog_add_to_recent_searches(array(
-            'fqdn' => $fqdn,
-            'search_terms' => $search_terms,
+            'search_query' => $search_query,
+            'search_mode' => $search_mode,
             'filter_out' => $filter_out,
             'time_range' => $time_range
         ));
@@ -80,8 +80,8 @@ function graylog_search_logs_handler() {
         $execution_time = isset($_POST['execution_time']) ? floatval($_POST['execution_time']) : 0;
         graylog_log_search_to_history(
             array(
-                'fqdn' => $fqdn,
-                'search_terms' => $search_terms,
+                'search_query' => $search_query,
+                'search_mode' => $search_mode,
                 'filter_out' => $filter_out,
                 'time_range' => $time_range,
                 'limit' => $limit,
@@ -143,81 +143,78 @@ function graylog_parse_multivalue_input($input, $split_on_spaces = true) {
 }
 
 // Build Graylog search query
-function graylog_build_query($fqdn, $search_terms, $filter_out) {
-    $query_groups = array();
+function graylog_build_query($search_query, $search_mode, $filter_out) {
+    $query_parts = array();
     
-    // Add hostname/FQDN search (searches the fqdn field with trailing wildcard)
-    // Multiple hostnames are OR'ed together
-    if (!empty($fqdn)) {
-        $fqdn_parts = array();
-        $fqdn_values = graylog_parse_multivalue_input($fqdn);
-        
-        foreach ($fqdn_values as $fqdn_item) {
-            // Add trailing wildcard for partial matching unless user already specified wildcards
-            // Only trailing wildcard to avoid expensive leading wildcard searches
-            if (strpos($fqdn_item, '*') === false && strpos($fqdn_item, '?') === false) {
-                $fqdn_item = $fqdn_item . '*';
-            }
+    // Handle search query based on mode
+    if (!empty($search_query)) {
+        if ($search_mode === 'advanced' || $search_mode === 'query_builder') {
+            // Advanced mode: user provides full Lucene syntax
+            // Pass through as-is (user has full control)
+            $query_parts[] = trim($search_query);
+        } else {
+            // Simple mode: search across multiple common fields
+            // Fields to search: message, fqdn, source, level, facility, application_name
+            $fields = array('message', 'fqdn', 'source', 'level', 'facility', 'application_name');
+            $terms = graylog_parse_multivalue_input($search_query, false); // Don't split on spaces
             
-            // Only add quotes if the value contains spaces or special characters (rare for hostnames)
-            if (preg_match('/\s/', $fqdn_item)) {
-                $fqdn_parts[] = 'fqdn:"' . $fqdn_item . '"';
-            } else {
-                $fqdn_parts[] = 'fqdn:' . $fqdn_item;
-            }
-        }
-        
-        // If multiple hostnames, OR them together and wrap in parentheses
-        if (count($fqdn_parts) > 1) {
-            $query_groups[] = '(' . implode(' OR ', $fqdn_parts) . ')';
-        } elseif (count($fqdn_parts) === 1) {
-            $query_groups[] = $fqdn_parts[0];
-        }
-    }
-    
-    // Add additional search terms (OR'ed together if multiple)
-    // DON'T split on spaces - treat phrases as single search terms
-    if (!empty($search_terms)) {
-        $terms = graylog_parse_multivalue_input($search_terms, false);
-        $term_parts = array();
-        foreach ($terms as $term) {
-            if (!empty($term)) {
-                // If term contains spaces, wrap in quotes for phrase search
-                // Search in message field explicitly when combined with other field searches
-                if (preg_match('/\s/', $term)) {
-                    $term_parts[] = 'message:"' . $term . '"';
-                } else {
-                    $term_parts[] = 'message:' . $term;
+            $field_queries = array();
+            foreach ($terms as $term) {
+                if (empty($term)) {
+                    continue;
+                }
+                
+                // For each term, create an OR query across all fields
+                $term_field_parts = array();
+                foreach ($fields as $field) {
+                    // Add wildcards for partial matching
+                    $search_term = $term;
+                    if (strpos($search_term, '*') === false && strpos($search_term, '?') === false) {
+                        $search_term = '*' . $search_term . '*';
+                    }
+                    
+                    // Wrap in quotes if contains spaces
+                    if (preg_match('/\s/', $search_term)) {
+                        $term_field_parts[] = $field . ':"' . $search_term . '"';
+                    } else {
+                        $term_field_parts[] = $field . ':' . $search_term;
+                    }
+                }
+                
+                // OR together all field searches for this term
+                if (count($term_field_parts) > 0) {
+                    $field_queries[] = '(' . implode(' OR ', $term_field_parts) . ')';
                 }
             }
-        }
-        
-        // If multiple search terms, OR them together and wrap in parentheses
-        if (count($term_parts) > 1) {
-            $query_groups[] = '(' . implode(' OR ', $term_parts) . ')';
-        } elseif (count($term_parts) === 1) {
-            $query_groups[] = $term_parts[0];
+            
+            // OR together all term queries
+            if (count($field_queries) > 1) {
+                $query_parts[] = '(' . implode(' OR ', $field_queries) . ')';
+            } elseif (count($field_queries) === 1) {
+                $query_parts[] = $field_queries[0];
+            }
         }
     }
     
     // Add filter out terms (NOT) - these are AND'ed with NOT prefix
+    // This works for all modes
     if (!empty($filter_out)) {
         $filters = graylog_parse_multivalue_input($filter_out);
         foreach ($filters as $filter) {
             if (!empty($filter)) {
-                $query_groups[] = 'NOT ' . $filter;
+                $query_parts[] = 'NOT ' . $filter;
             }
         }
     }
     
     // If no query parts, search for everything
-    if (empty($query_groups)) {
+    if (empty($query_parts)) {
         return '*';
     }
     
-    // AND together the different groups (hostnames, search terms, filters)
-    $final_query = implode(' AND ', $query_groups);
-    error_log('Graylog Search: Built query: ' . $final_query);
+    // AND together all parts
+    $final_query = implode(' AND ', $query_parts);
+    error_log('Graylog Search: Built query (mode: ' . $search_mode . '): ' . $final_query);
     return $final_query;
 }
 

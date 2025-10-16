@@ -20,6 +20,12 @@ jQuery(document).ready(function($) {
     var parseEnabled = false;
     var parseFormats = {json: true, kv: true, cef: true, leef: true};
     
+    // Current search mode (simple, advanced, query_builder)
+    var currentSearchMode = localStorage.getItem('graylog_search_mode') || 'simple';
+    
+    // Initialize search mode tabs
+    initializeSearchTabs();
+    
     // Load saved timezone preference on page load
     loadTimezonePreference();
     
@@ -30,6 +36,40 @@ jQuery(document).ready(function($) {
     
     // Debounce timer for search-as-you-type
     var debounceTimer = null;
+    
+    // Tab switching functionality
+    function initializeSearchTabs() {
+        // Set active tab on load
+        $('.graylog-tab-btn').removeClass('active');
+        $('.graylog-tab-content').removeClass('active');
+        $('.graylog-tab-btn[data-tab="' + currentSearchMode + '"]').addClass('active');
+        $('.graylog-tab-content[data-content="' + currentSearchMode + '"]').addClass('active');
+        
+        // Tab click handler
+        $(document).on('click', '.graylog-tab-btn', function(e) {
+            e.preventDefault();
+            var tab = $(this).data('tab');
+            
+            // Update active tab
+            $(this).siblings().removeClass('active');
+            $(this).addClass('active');
+            
+            // Show corresponding content
+            var $container = $(this).closest('.graylog-search-form-container, .graylog-search-compact-form');
+            $container.find('.graylog-tab-content').removeClass('active');
+            $container.find('.graylog-tab-content[data-content="' + tab + '"]').addClass('active');
+            
+            // Save preference
+            currentSearchMode = tab;
+            localStorage.setItem('graylog_search_mode', tab);
+        });
+        
+        // Initialize query builder button
+        $(document).on('click', '#init-query-builder', function() {
+            // Trigger the existing query builder modal
+            $('#open-query-builder').click();
+        });
+    }
     
     // Handle search form submission - Admin interface
     $('#graylog-search-form').on('submit', function(e) {
@@ -46,7 +86,7 @@ jQuery(document).ready(function($) {
     });
     
     // Optional: Auto-search on input change (debounced)
-    $('#search_terms, #search_fqdn, .search-terms, .search-fqdn').on('input', function() {
+    $(document).on('input', '.search-query-input', function() {
         // Only if enabled (not enabled by default to avoid unwanted API calls)
         if (window.graylogAutoSearchEnabled) {
             clearTimeout(debounceTimer);
@@ -58,6 +98,38 @@ jQuery(document).ready(function($) {
             }, 300);
         }
     });
+    
+    // Get the active search query from the current tab
+    function getActiveSearchQuery($container, interfaceType) {
+        var $activeContent = $container.find('.graylog-tab-content.active');
+        var mode = $activeContent.data('content') || currentSearchMode;
+        var searchQuery = '';
+        
+        if (interfaceType === 'admin') {
+            if (mode === 'simple') {
+                searchQuery = $('#search_query_simple').val();
+            } else if (mode === 'advanced') {
+                searchQuery = $('#search_query_advanced').val();
+            } else if (mode === 'query_builder') {
+                // For query builder, use the advanced field (where the builder populates)
+                searchQuery = $('#search_query_advanced').val();
+            }
+        } else {
+            // Shortcode
+            if (mode === 'simple') {
+                searchQuery = $container.find('[id$="_query_simple"]').val();
+            } else if (mode === 'advanced') {
+                searchQuery = $container.find('[id$="_query_advanced"]').val();
+            } else if (mode === 'query_builder') {
+                searchQuery = $container.find('[id$="_query_advanced"]').val();
+            }
+        }
+        
+        return {
+            query: searchQuery,
+            mode: mode
+        };
+    }
     
     // Perform search function with retry logic
     function performSearch($form, interfaceType, retryCount) {
@@ -77,12 +149,15 @@ jQuery(document).ready(function($) {
         // Update connection status
         updateConnectionStatus('connecting');
         
+        // Get the active search query and mode
+        var searchData = getActiveSearchQuery($container, interfaceType);
+        
         // Get form data based on interface type
         var formData = {
             action: 'graylog_search_logs',
             nonce: graylogSearch.nonce,
-            fqdn: interfaceType === 'admin' ? $('#search_fqdn').val() : $form.find('.search-fqdn').val(),
-            search_terms: interfaceType === 'admin' ? $('#search_terms').val() : $form.find('.search-terms').val(),
+            search_query: searchData.query,
+            search_mode: searchData.mode,
             filter_out: interfaceType === 'admin' ? $('#filter_out').val() : $form.find('.filter-out').val(),
             time_range: interfaceType === 'admin' ? $('#time_range').val() : $form.find('.time-range').val(),
             limit: interfaceType === 'admin' ? $('#result_limit').val() : $form.find('.result-limit').val()
@@ -423,26 +498,25 @@ jQuery(document).ready(function($) {
     
     // Auto-highlight search terms in results
     function autoHighlightSearchTerms($container, interfaceType) {
-        var searchTermsValue;
+        // Get the active search query and mode
+        var searchData = getActiveSearchQuery($container, interfaceType);
         
-        // Get search terms from the appropriate form
-        if (interfaceType === 'admin') {
-            searchTermsValue = $('#search_terms').val();
-        } else {
-            searchTermsValue = $container.find('.search-terms').val();
-        }
-        
-        if (!searchTermsValue || searchTermsValue.trim() === '') {
-            return; // No search terms to highlight
+        // Only auto-highlight in simple mode (advanced/query_builder are too complex to parse)
+        if (searchData.mode !== 'simple' || !searchData.query || searchData.query.trim() === '') {
+            return;
         }
         
         // Parse search terms (split by commas and newlines, don't split on spaces for phrases)
-        var terms = parseMultiValueInput(searchTermsValue);
+        var terms = parseMultiValueInput(searchData.query);
         
         // Highlight each term
         terms.forEach(function(term) {
             if (term && term.trim().length > 0) {
-                highlightText(term.trim());
+                // Remove wildcards for highlighting
+                var cleanTerm = term.trim().replace(/^\*|\*$/g, '');
+                if (cleanTerm.length > 0) {
+                    highlightText(cleanTerm);
+                }
             }
         });
     }
@@ -1894,8 +1968,16 @@ jQuery(document).ready(function($) {
         var html = '<div style="display: flex; flex-direction: column; gap: 3px;">';
         $.each(searches.slice(0, 5), function(index, data) {
             var label = [];
-            if (data.fqdn) label.push('Host: ' + data.fqdn.substring(0, 15) + (data.fqdn.length > 15 ? '...' : ''));
-            if (data.search_terms) label.push('Terms: ' + data.search_terms.substring(0, 15) + (data.search_terms.length > 15 ? '...' : ''));
+            var modeLabel = data.search_mode === 'advanced' ? '[Adv]' : (data.search_mode === 'query_builder' ? '[QB]' : '[Simple]');
+            
+            if (data.search_query) {
+                var preview = data.search_query.substring(0, 20) + (data.search_query.length > 20 ? '...' : '');
+                label.push(modeLabel + ' ' + preview);
+            } else if (data.fqdn || data.search_terms) {
+                // Legacy format support
+                if (data.fqdn) label.push('Host: ' + data.fqdn.substring(0, 15) + (data.fqdn.length > 15 ? '...' : ''));
+                if (data.search_terms) label.push('Terms: ' + data.search_terms.substring(0, 15) + (data.search_terms.length > 15 ? '...' : ''));
+            }
             if (label.length === 0) label.push('All logs');
             
             html += '<button class="button button-small load-recent-search" data-index="' + index + '" style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px;">';
@@ -1930,12 +2012,16 @@ jQuery(document).ready(function($) {
         var searchName = prompt('Enter a name for this search:');
         if (!searchName) return;
         
+        // Get the active search query and mode
+        var $container = $('.graylog-search-wrap');
+        var searchData = getActiveSearchQuery($container, 'admin');
+        
         var formData = {
             action: 'graylog_save_search',
             nonce: graylogSearch.nonce,
             name: searchName,
-            fqdn: $('#search_fqdn').val(),
-            search_terms: $('#search_terms').val(),
+            search_query: searchData.query,
+            search_mode: searchData.mode,
             filter_out: $('#filter_out').val(),
             time_range: $('#time_range').val()
         };
@@ -1969,8 +2055,19 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success && response.data.searches[searchName]) {
                     var data = response.data.searches[searchName];
-                    $('#search_fqdn').val(data.fqdn || '');
-                    $('#search_terms').val(data.search_terms || '');
+                    
+                    // Switch to the appropriate tab
+                    var mode = data.search_mode || 'simple';
+                    currentSearchMode = mode;
+                    $('.graylog-tab-btn[data-tab="' + mode + '"]').click();
+                    
+                    // Populate the appropriate query field
+                    if (mode === 'simple') {
+                        $('#search_query_simple').val(data.search_query || '');
+                    } else if (mode === 'advanced' || mode === 'query_builder') {
+                        $('#search_query_advanced').val(data.search_query || '');
+                    }
+                    
                     $('#filter_out').val(data.filter_out || '');
                     $('#time_range').val(data.time_range || 86400);
                     
@@ -2009,6 +2106,8 @@ jQuery(document).ready(function($) {
     
     // Load recent search
     $(document).on('click', '.load-recent-search', function() {
+        var clickedIndex = parseInt($(this).data('index'));
+        
         $.ajax({
             url: graylogSearch.ajaxUrl,
             type: 'POST',
@@ -2018,12 +2117,21 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success && response.data.searches) {
-                    var index = parseInt($(this).data('index'));
-                    var data = response.data.searches[index];
+                    var data = response.data.searches[clickedIndex];
                     
                     if (data) {
-                        $('#search_fqdn').val(data.fqdn || '');
-                        $('#search_terms').val(data.search_terms || '');
+                        // Switch to the appropriate tab
+                        var mode = data.search_mode || 'simple';
+                        currentSearchMode = mode;
+                        $('.graylog-tab-btn[data-tab="' + mode + '"]').click();
+                        
+                        // Populate the appropriate query field
+                        if (mode === 'simple') {
+                            $('#search_query_simple').val(data.search_query || '');
+                        } else if (mode === 'advanced' || mode === 'query_builder') {
+                            $('#search_query_advanced').val(data.search_query || '');
+                        }
+                        
                         $('#filter_out').val(data.filter_out || '');
                         $('#time_range').val(data.time_range || 86400);
                         
