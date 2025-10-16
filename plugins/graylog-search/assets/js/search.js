@@ -72,30 +72,20 @@ jQuery(document).ready(function($) {
     
     // Initialize query builder inline (called when tab is activated)
     function initQueryBuilderInline() {
-        var $container = $('#query-builder-inline-container, #query-builder-inline-container-shortcode');
+        // Find the query builder button (may be in different locations)
+        var $queryBuilderBtn = $('#open-query-builder');
         
-        // Check if already initialized
-        if ($container.find('.query-builder-interface').length > 0) {
-            return; // Already initialized
-        }
-        
-        // Trigger the existing query builder modal to open
-        // but we'll need to adapt it for inline display
-        if (typeof window.graylogQueryBuilder !== 'undefined' && window.graylogQueryBuilder.openModal) {
-            window.graylogQueryBuilder.openModal();
+        // If button exists, click it to open the modal
+        if ($queryBuilderBtn.length > 0) {
+            $queryBuilderBtn.trigger('click');
         } else {
-            // Fallback: show a message
-            $container.html('<div style="padding: 40px; text-align: center;">' +
-                '<p style="margin-bottom: 20px;">Query Builder</p>' +
-                '<p><em>Loading visual query builder...</em></p>' +
+            // Button doesn't exist, show error message
+            var $container = $('#query-builder-inline-container, #query-builder-inline-container-shortcode');
+            $container.html('<div style="padding: 40px; text-align: center; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px;">' +
+                '<span class="dashicons dashicons-warning" style="font-size: 40px; color: #ffc107; margin-bottom: 15px; display: block;"></span>' +
+                '<p style="color: #856404; font-size: 14px; margin: 0;"><strong>Query Builder Not Available</strong><br>' +
+                'The query builder could not be loaded. Please use Advanced mode for complex queries.</p>' +
                 '</div>');
-            
-            // Try to trigger the modal after a short delay
-            setTimeout(function() {
-                if ($('#open-query-builder').length > 0) {
-                    $('#open-query-builder').click();
-                }
-            }, 100);
         }
     }
     
