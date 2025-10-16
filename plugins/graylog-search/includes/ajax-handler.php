@@ -30,9 +30,18 @@ function graylog_search_logs_handler() {
     $limit = intval($_POST['limit']);
     $offset = isset($_POST['offset']) ? intval($_POST['offset']) : 0;
     
+    // DEBUG: Log incoming parameters
+    error_log('===== GRAYLOG SEARCH DEBUG =====');
+    error_log('Search Query: "' . $search_query . '"');
+    error_log('Search Mode: "' . $search_mode . '"');
+    error_log('Filter Out: "' . $filter_out . '"');
+    error_log('Time Range: ' . $time_range);
+    error_log('Limit: ' . $limit);
+    
     // Build Graylog query
     $query = graylog_build_query($search_query, $search_mode, $filter_out);
-    error_log('Graylog Search: Query built: ' . $query);
+    error_log('Final Graylog Query: ' . $query);
+    error_log('================================');
     
     // Check cache first (5-minute TTL)
     $cache_key = 'graylog_search_' . md5($query . $time_range . $limit . $offset);
@@ -164,12 +173,19 @@ function graylog_build_query($search_query, $search_mode, $filter_out) {
                     continue;
                 }
                 
+                // Check if term contains spaces (phrase search)
+                $has_spaces = preg_match('/\s/', $term);
+                
                 // Escape special Lucene characters except * and ?
                 $term = preg_replace('/([+\-&|!(){}\[\]^"~:\\\])/', '\\\\$1', $term);
                 
-                // Add trailing wildcard for partial matching (unless user specified wildcards)
-                if (strpos($term, '*') === false && strpos($term, '?') === false) {
-                    $term = $term . '*';
+                // For phrases (terms with spaces), we can't use wildcards in quotes
+                // For single words, add trailing wildcard
+                if (!$has_spaces) {
+                    // Add trailing wildcard for partial matching (unless user specified wildcards)
+                    if (strpos($term, '*') === false && strpos($term, '?') === false) {
+                        $term = $term . '*';
+                    }
                 }
                 
                 // Build a simple query that searches common fields
@@ -178,10 +194,11 @@ function graylog_build_query($search_query, $search_mode, $filter_out) {
                 $field_parts = array();
                 
                 foreach ($fields as $field) {
-                    // Quote the term if it contains spaces (even with wildcard)
-                    if (preg_match('/\s/', str_replace('*', '', $term))) {
-                        $field_parts[] = $field . ':"' . $term . '"';
+                    if ($has_spaces) {
+                        // Phrase search - must use quotes, no wildcards
+                        $field_parts[] = $field . ':"' . str_replace('*', '', $term) . '"';
                     } else {
+                        // Single word - can use wildcards without quotes
                         $field_parts[] = $field . ':' . $term;
                     }
                 }

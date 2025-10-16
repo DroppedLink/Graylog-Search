@@ -152,6 +152,12 @@ jQuery(document).ready(function($) {
         // Get the active search query and mode
         var searchData = getActiveSearchQuery($container, interfaceType);
         
+        // DEBUG: Log what we're sending
+        console.log('===== SEARCH DEBUG =====');
+        console.log('Search Query:', searchData.query);
+        console.log('Search Mode:', searchData.mode);
+        console.log('Interface Type:', interfaceType);
+        
         // Get form data based on interface type
         var formData = {
             action: 'graylog_search_logs',
@@ -162,6 +168,9 @@ jQuery(document).ready(function($) {
             time_range: interfaceType === 'admin' ? $('#time_range').val() : $form.find('.time-range').val(),
             limit: interfaceType === 'admin' ? $('#result_limit').val() : $form.find('.result-limit').val()
         };
+        
+        console.log('Form Data:', formData);
+        console.log('========================');
         
         // Store for auto-refresh
         lastSearchData = {
