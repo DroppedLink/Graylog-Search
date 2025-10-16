@@ -38,6 +38,19 @@ function graylog_search_history_create_table() {
 // Hook into plugin activation
 register_activation_hook(GRAYLOG_SEARCH_PLUGIN_DIR . 'graylog-search.php', 'graylog_search_history_create_table');
 
+// Helper: Check if history table exists and is accessible
+function graylog_search_history_table_exists() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'graylog_search_history';
+    
+    // Suppress errors for this check
+    $wpdb->hide_errors();
+    $exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+    $wpdb->show_errors();
+    
+    return $exists;
+}
+
 // Log a search to history
 function graylog_log_search_to_history($search_params, $query_string, $result_count, $execution_time = 0) {
     global $wpdb;
@@ -47,6 +60,25 @@ function graylog_log_search_to_history($search_params, $query_string, $result_co
     }
     
     $table_name = $wpdb->prefix . 'graylog_search_history';
+    
+    // Check if table exists - if not, try to create it
+    // Suppress errors to prevent them from being output in AJAX responses
+    $wpdb->hide_errors();
+    $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+    
+    if (!$table_exists) {
+        error_log('Graylog Search: History table does not exist, attempting to create...');
+        graylog_search_history_create_table();
+        
+        // Check again
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+        if (!$table_exists) {
+            error_log('Graylog Search: Failed to create history table, skipping history logging');
+            $wpdb->show_errors(); // Re-enable for debugging elsewhere
+            return false;
+        }
+    }
+    $wpdb->show_errors(); // Re-enable for debugging elsewhere
     
     $data = array(
         'user_id' => get_current_user_id(),
@@ -97,6 +129,12 @@ function graylog_cleanup_old_history() {
 
 // Get search history
 function graylog_get_search_history($filters = array()) {
+    // Check if table exists first
+    if (!graylog_search_history_table_exists()) {
+        error_log('Graylog Search: Cannot get history - table does not exist');
+        return array(); // Return empty array instead of error
+    }
+    
     global $wpdb;
     $table_name = $wpdb->prefix . 'graylog_search_history';
     $user_id = get_current_user_id();
@@ -156,6 +194,11 @@ function graylog_get_search_history($filters = array()) {
 
 // Get search history count
 function graylog_get_search_history_count($filters = array()) {
+    // Check if table exists first
+    if (!graylog_search_history_table_exists()) {
+        return 0; // Return 0 instead of error
+    }
+    
     global $wpdb;
     $table_name = $wpdb->prefix . 'graylog_search_history';
     $user_id = get_current_user_id();
