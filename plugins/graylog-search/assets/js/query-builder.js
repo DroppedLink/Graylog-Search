@@ -21,17 +21,14 @@ jQuery(document).ready(function($) {
         loadFields();
         loadOperators();
         
-        // Add query builder button to search form
-        if ($('#search_fqdn').closest('.form-table').length > 0) {
-            var buttonHtml = '<tr><td colspan="2">';
-            buttonHtml += '<button type="button" class="button button-large" id="open-query-builder">';
-            buttonHtml += '<span class="dashicons dashicons-editor-code"></span> Visual Query Builder';
-            buttonHtml += '</button>';
-            buttonHtml += '<p class="description">Build complex queries visually with drag-and-drop blocks</p>';
-            buttonHtml += '</td></tr>';
-            
-            $('#search_fqdn').closest('tr').after(buttonHtml);
+        // Create a hidden button that can be triggered programmatically
+        // (needed for the Query Builder tab functionality)
+        if ($('#open-query-builder').length === 0) {
+            $('<button type="button" id="open-query-builder" style="display:none;"></button>').appendTo('body');
         }
+        
+        // Make showQueryBuilder globally accessible
+        window.graylogShowQueryBuilder = showQueryBuilder;
     }
     
     // Load available fields

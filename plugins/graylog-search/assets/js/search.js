@@ -72,21 +72,35 @@ jQuery(document).ready(function($) {
     
     // Initialize query builder inline (called when tab is activated)
     function initQueryBuilderInline() {
-        // Find the query builder button (may be in different locations)
-        var $queryBuilderBtn = $('#open-query-builder');
+        // Try to call the global function first (if query-builder.js is loaded)
+        if (typeof window.graylogShowQueryBuilder === 'function') {
+            window.graylogShowQueryBuilder();
+            return;
+        }
         
-        // If button exists, click it to open the modal
+        // Fallback: try to find and click the button
+        var $queryBuilderBtn = $('#open-query-builder');
         if ($queryBuilderBtn.length > 0) {
             $queryBuilderBtn.trigger('click');
-        } else {
-            // Button doesn't exist, show error message
-            var $container = $('#query-builder-inline-container, #query-builder-inline-container-shortcode');
-            $container.html('<div style="padding: 40px; text-align: center; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px;">' +
-                '<span class="dashicons dashicons-warning" style="font-size: 40px; color: #ffc107; margin-bottom: 15px; display: block;"></span>' +
-                '<p style="color: #856404; font-size: 14px; margin: 0;"><strong>Query Builder Not Available</strong><br>' +
-                'The query builder could not be loaded. Please use Advanced mode for complex queries.</p>' +
-                '</div>');
+            return;
         }
+        
+        // If neither works, wait a moment and try again (scripts may still be loading)
+        setTimeout(function() {
+            if (typeof window.graylogShowQueryBuilder === 'function') {
+                window.graylogShowQueryBuilder();
+            } else if ($('#open-query-builder').length > 0) {
+                $('#open-query-builder').trigger('click');
+            } else {
+                // Still not available, show error
+                var $container = $('#query-builder-inline-container, #query-builder-inline-container-shortcode');
+                $container.html('<div style="padding: 40px; text-align: center; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px;">' +
+                    '<span class="dashicons dashicons-warning" style="font-size: 40px; color: #ffc107; margin-bottom: 15px; display: block;"></span>' +
+                    '<p style="color: #856404; font-size: 14px; margin: 0;"><strong>Query Builder Not Available</strong><br>' +
+                    'The query builder scripts are not loaded. Please refresh the page or use Advanced mode.</p>' +
+                    '</div>');
+            }
+        }, 500);
     }
     
     // Handle search form submission - Admin interface
