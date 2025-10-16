@@ -514,10 +514,37 @@ function ai_comment_moderator_settings_page() {
             
             <?php submit_button('Save Settings', 'primary', 'ai_moderator_settings_submit'); ?>
         </form>
+        
+        <!-- Danger Zone Section (v2.2.0+) -->
+        <div class="ai-moderator-danger-zone" style="margin-top: 40px; padding: 20px; border: 2px solid #dc3232; border-radius: 4px; background: #fff;">
+            <h2 style="color: #dc3232; margin-top: 0;">⚠️ Danger Zone</h2>
+            
+            <div class="reset-data-section" style="margin-bottom: 20px;">
+                <h3>Reset Processing Data</h3>
+                <p>Clear all AI moderation history, analytics, and processed comments while keeping your configuration settings (AI providers, remote sites, prompts, and plugin settings).</p>
+                
+                <div class="current-data-stats" style="background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 3px;">
+                    <strong>Current Data:</strong><br>
+                    <span id="reviews-count">Loading...</span> AI reviews<br>
+                    <span id="corrections-count">Loading...</span> corrections tracked<br>
+                    <span id="remote-comments-count">Loading...</span> remote comments cached
+                </div>
+                
+                <p style="color: #d63638;"><strong>Warning:</strong> This action cannot be undone. Your settings and configuration will be preserved.</p>
+                
+                <button type="button" id="reset-data-btn" class="button button-secondary">
+                    🗑️ Reset Processing Data
+                </button>
+                <span class="reset-status" style="margin-left: 10px;"></span>
+            </div>
+        </div>
     </div>
     
     <script>
     jQuery(document).ready(function($) {
+        // Load data stats on page load (v2.2.0+)
+        loadDataStats();
+        
         // Provider switching
         $('#active_provider').on('change', function() {
             var provider = $(this).val();
@@ -675,6 +702,57 @@ function ai_comment_moderator_settings_page() {
                 $status.html('<span style="color: #dc3232; margin-left: 10px;">✗ Network error</span>');
             }).always(function() {
                 $button.prop('disabled', false).text('Test Connection & Load Models');
+            });
+        });
+        
+        // Data stats loading function (v2.2.0+)
+        function loadDataStats() {
+            $.post(ajaxurl, {
+                action: 'ai_moderator_get_data_stats',
+                nonce: '<?php echo wp_create_nonce('ai_comment_moderator_nonce'); ?>'
+            }, function(response) {
+                if (response.success) {
+                    $('#reviews-count').text(response.data.reviews.toLocaleString());
+                    $('#corrections-count').text(response.data.corrections.toLocaleString());
+                    $('#remote-comments-count').text(response.data.remote_comments.toLocaleString());
+                }
+            }).fail(function() {
+                $('#reviews-count').text('Error loading');
+                $('#corrections-count').text('Error loading');
+                $('#remote-comments-count').text('Error loading');
+            });
+        }
+        
+        // Reset data handler (v2.2.0+)
+        $('#reset-data-btn').on('click', function() {
+            if (!confirm('Are you sure you want to delete all AI moderation history and analytics?\n\nThis will clear:\n• All processed comments\n• All analytics data\n• All correction tracking\n• All remote comments cache\n\nYour settings, prompts, and remote sites will be preserved.\n\nThis cannot be undone!')) {
+                return;
+            }
+            
+            var $btn = $(this);
+            var $status = $('.reset-status');
+            
+            $btn.prop('disabled', true).text('Resetting...');
+            $status.html('<span style="color: #666;">⏳ Clearing data...</span>');
+            
+            $.post(ajaxurl, {
+                action: 'ai_moderator_reset_data',
+                nonce: '<?php echo wp_create_nonce('ai_moderator_reset_data'); ?>'
+            }, function(response) {
+                if (response.success) {
+                    $status.html('<span style="color: #46b450;">✓ Data cleared successfully!</span>');
+                    loadDataStats(); // Refresh counts
+                    setTimeout(function() {
+                        $status.html('');
+                        $btn.prop('disabled', false).text('🗑️ Reset Processing Data');
+                    }, 3000);
+                } else {
+                    $status.html('<span style="color: #dc3232;">✗ Error: ' + (response.data || 'Unknown error') + '</span>');
+                    $btn.prop('disabled', false).text('🗑️ Reset Processing Data');
+                }
+            }).fail(function() {
+                $status.html('<span style="color: #dc3232;">✗ Network error</span>');
+                $btn.prop('disabled', false).text('🗑️ Reset Processing Data');
             });
         });
     });

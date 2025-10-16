@@ -17,6 +17,9 @@ function sp_dashboard_page() {
 			<?php endforeach; ?>
 		</select>
 		<button class="button" id="sp-refresh">Refresh</button>
+		<label style="margin-left:12px;">
+			<input type="checkbox" id="sp-autorefresh"> Auto-refresh logs
+		</label>
 
 		<table class="widefat fixed striped" id="sp-table" style="margin-top:12px;">
 			<thead>
@@ -42,13 +45,15 @@ function sp_dashboard_page() {
 					<button class="button" id="sp-logs-close">Close</button>
 				</div>
 			</div>
-			<pre id="sp-logs-pre" style="margin:0; padding:12px; height:calc(100% - 50px); overflow:auto; background:#111; color:#ddd;"></pre>
+			<pre id="sp-logs-pre" style="margin:0; padding:12px; height:calc(100% - 50px); overflow:auto; background:#111; color:#ddd;" role="document" aria-live="polite"></pre>
 		</div>
 	</div>
 
 	<script type="text/javascript">
 	(function($){
 		var hasDashboard = $('#sp-table').length > 0;
+		var autoRefresh = false;
+		var autoRefreshTimer = null;
 
 		function renderTable(data){
 			var tbody = $('#sp-table tbody');
@@ -100,13 +105,16 @@ function sp_dashboard_page() {
 		$(document).on('click','.sp-logs',function(){
 			var containerId = $(this).data('id');
 			$('#sp-logs-pre').text('Loading logs...');
-			$('#sp-logs-modal').data('containerId', containerId).show();
+			$('#sp-logs-modal').attr('role','dialog').attr('aria-modal','true').data('containerId', containerId).show();
 			$.post(ajaxurl, { action:'sp_fetch_logs', nonce: '<?php echo esc_js(wp_create_nonce('sp_nonce')); ?>', envId: $('#sp-env').val(), containerId: containerId }, function(r){
 				if(!r.success){ $('#sp-logs-pre').text('Failed: ' + (r.data && r.data.message ? r.data.message : 'Error')); return; }
 				$('#sp-logs-pre').text(r.data.logs || '');
 			});
 		});
-		$('#sp-logs-close').on('click', function(){ $('#sp-logs-modal').hide().removeData('containerId'); });
+		$('#sp-logs-close').on('click', function(){
+			$('#sp-logs-modal').hide().removeData('containerId');
+			if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+		});
 		$('#sp-logs-refresh').on('click', function(){
 			var id = $('#sp-logs-modal').data('containerId');
 			if(!id) return;
@@ -115,6 +123,14 @@ function sp_dashboard_page() {
 				if(!r.success){ $('#sp-logs-pre').text('Failed: ' + (r.data && r.data.message ? r.data.message : 'Error')); return; }
 				$('#sp-logs-pre').text(r.data.logs || '');
 			});
+		});
+
+		$('#sp-autorefresh').on('change', function(){
+			autoRefresh = $(this).is(':checked');
+			if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+			if (autoRefresh) {
+				autoRefreshTimer = setInterval(function(){ $('#sp-logs-refresh').trigger('click'); }, 5000);
+			}
 		});
 
 		if (hasDashboard) { loadContainers(); }

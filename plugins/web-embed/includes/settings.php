@@ -317,6 +317,11 @@ function web_embed_settings_page() {
         check_admin_referer('web_embed_settings_nonce');
         web_embed_save_settings();
         
+        web_embed_log_audit(
+            'settings_saved',
+            __('Plugin settings updated', 'web-embed')
+        );
+        
         echo '<div class="notice notice-success is-dismissible"><p>' . 
              esc_html__('Settings saved successfully!', 'web-embed') . 
              '</p></div>';
@@ -325,14 +330,43 @@ function web_embed_settings_page() {
     // Handle cache clear
     if (isset($_POST['web_embed_clear_cache'])) {
         check_admin_referer('web_embed_cache_nonce');
-        $count = web_embed_clear_all_cache();
+        
+        // Rate limiting: 5 cache clears per hour
+        $rate_check = web_embed_check_rate_limit('cache_clear', 5, 3600);
+        
+        if (!$rate_check['allowed']) {
+            echo '<div class="notice notice-error is-dismissible"><p>' . 
+                 sprintf(
+                     /* translators: %d: minutes until rate limit resets */
+                     esc_html__('Rate limit exceeded. Please wait %d minutes before clearing cache again.', 'web-embed'),
+                     ceil($rate_check['reset_in'] / 60)
+                 ) . 
+                 '</p></div>';
+        } else {
+            $count = web_embed_clear_all_cache();
+            
+            web_embed_log_audit(
+                'cache_cleared',
+                sprintf(__('%d caches cleared', 'web-embed'), $count)
+            );
+            
+            echo '<div class="notice notice-success is-dismissible"><p>' . 
+                 sprintf(
+                     /* translators: %d: number of caches cleared */
+                     esc_html(_n('%d cache cleared.', '%d caches cleared.', $count, 'web-embed')),
+                     $count
+                 ) . 
+                 '</p></div>';
+        }
+    }
+    
+    // Handle audit log clear
+    if (isset($_POST['web_embed_clear_audit_log'])) {
+        check_admin_referer('web_embed_audit_nonce');
+        web_embed_clear_audit_log();
         
         echo '<div class="notice notice-success is-dismissible"><p>' . 
-             sprintf(
-                 /* translators: %d: number of caches cleared */
-                 esc_html(_n('%d cache cleared.', '%d caches cleared.', $count, 'web-embed')),
-                 $count
-             ) . 
+             esc_html__('Audit log cleared successfully!', 'web-embed') . 
              '</p></div>';
     }
     
@@ -527,6 +561,21 @@ function web_embed_settings_page() {
                        value="<?php esc_attr_e('Clear All Cache', 'web-embed'); ?>">
             </p>
         </form>
+        
+        <hr>
+        
+        <h2><?php esc_html_e('Performance Metrics', 'web-embed'); ?></h2>
+        <?php web_embed_display_performance_metrics(); ?>
+        
+        <hr>
+        
+        <h2><?php esc_html_e('CSP Helper for Enterprise Apps', 'web-embed'); ?></h2>
+        <?php web_embed_display_csp_helper(); ?>
+        
+        <hr>
+        
+        <h2><?php esc_html_e('Audit Log', 'web-embed'); ?></h2>
+        <?php web_embed_display_audit_log(); ?>
     </div>
     <?php
 }
@@ -549,5 +598,169 @@ function web_embed_save_settings() {
     update_option('web_embed_default_height', sanitize_text_field($_POST['default_height'] ?? '600px'));
     update_option('web_embed_default_responsive', isset($_POST['default_responsive']) ? '1' : '0');
     update_option('web_embed_custom_css_class', sanitize_html_class($_POST['custom_css_class'] ?? ''));
+}
+
+/**
+ * Display performance metrics
+ * 
+ * Shows performance statistics for the plugin.
+ *
+ * @since 1.0.0
+ * @return void
+ */
+function web_embed_display_performance_metrics() {
+    global $wpdb;
+    
+    $cache_stats = web_embed_get_cache_stats();
+    
+    // Count total shortcodes on site
+    $shortcode_count = $wpdb->get_var(
+        "SELECT COUNT(*) FROM {$wpdb->posts} 
+        WHERE post_content LIKE '%[web_embed%' 
+        AND post_status = 'publish'"
+    );
+    
+    // Get PHP info
+    $memory_limit = ini_get('memory_limit');
+    $max_execution = ini_get('max_execution_time');
+    
+    ?>
+    <table class="form-table">
+        <tr>
+            <th scope="row"><?php esc_html_e('Cache Performance', 'web-embed'); ?></th>
+            <td>
+                <p>
+                    <strong><?php esc_html_e('Cached Items:', 'web-embed'); ?></strong> 
+                    <?php echo esc_html($cache_stats['total_cached']); ?><br>
+                    <strong><?php esc_html_e('Cache Size:', 'web-embed'); ?></strong> 
+                    <?php echo esc_html($cache_stats['cache_size']); ?><br>
+                    <strong><?php esc_html_e('Cache Type:', 'web-embed'); ?></strong> 
+                    <?php echo $cache_stats['object_cache'] ? 
+                        esc_html__('Object Cache + Transients', 'web-embed') : 
+                        esc_html__('Transients Only', 'web-embed'); ?>
+                </p>
+                <?php if ($cache_stats['object_cache']): ?>
+                    <p class="description" style="color: #00a32a;">
+                        ✓ <?php esc_html_e('Object cache detected! Optimal performance.', 'web-embed'); ?>
+                    </p>
+                <?php else: ?>
+                    <p class="description">
+                        <?php esc_html_e('Using transients (default). Install Redis or Memcached for better performance.', 'web-embed'); ?>
+                    </p>
+                <?php endif; ?>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><?php esc_html_e('Usage Statistics', 'web-embed'); ?></th>
+            <td>
+                <p>
+                    <strong><?php esc_html_e('Active Embeds:', 'web-embed'); ?></strong> 
+                    <?php echo esc_html($shortcode_count); ?> 
+                    <?php esc_html_e('published posts/pages', 'web-embed'); ?>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><?php esc_html_e('Server Resources', 'web-embed'); ?></th>
+            <td>
+                <p>
+                    <strong><?php esc_html_e('PHP Memory Limit:', 'web-embed'); ?></strong> 
+                    <?php echo esc_html($memory_limit); ?><br>
+                    <strong><?php esc_html_e('Max Execution Time:', 'web-embed'); ?></strong> 
+                    <?php echo esc_html($max_execution); ?> <?php esc_html_e('seconds', 'web-embed'); ?><br>
+                    <strong><?php esc_html_e('PHP Version:', 'web-embed'); ?></strong> 
+                    <?php echo esc_html(PHP_VERSION); ?>
+                </p>
+            </td>
+        </tr>
+    </table>
+    <?php
+}
+
+/**
+ * Display CSP helper
+ * 
+ * Shows Content-Security-Policy header generator for enterprise apps.
+ *
+ * @since 1.0.0
+ * @return void
+ */
+function web_embed_display_csp_helper() {
+    $wordpress_url = home_url();
+    ?>
+    <div class="web-embed-csp-helper" style="background: #f0f6fc; padding: 20px; border: 1px solid #c8d7e8; border-radius: 4px;">
+        <p><?php esc_html_e('If your internal applications are blocking embedding, add this header to allow WordPress:', 'web-embed'); ?></p>
+        
+        <h4><?php esc_html_e('Content-Security-Policy Header', 'web-embed'); ?></h4>
+        <textarea readonly class="large-text code" rows="3" style="font-family: monospace; background: #fff;">Content-Security-Policy: frame-ancestors 'self' <?php echo esc_html($wordpress_url); ?></textarea>
+        
+        <h4 style="margin-top: 20px;"><?php esc_html_e('Or X-Frame-Options (Legacy)', 'web-embed'); ?></h4>
+        <textarea readonly class="large-text code" rows="2" style="font-family: monospace; background: #fff;">X-Frame-Options: ALLOW-FROM <?php echo esc_html($wordpress_url); ?></textarea>
+        
+        <p class="description" style="margin-top: 15px;">
+            <strong><?php esc_html_e('How to use:', 'web-embed'); ?></strong><br>
+            <?php esc_html_e('1. Copy one of the headers above', 'web-embed'); ?><br>
+            <?php esc_html_e('2. Add it to your internal application\'s server configuration', 'web-embed'); ?><br>
+            <?php esc_html_e('3. See ENTERPRISE_APPS_GUIDE.md for platform-specific instructions', 'web-embed'); ?>
+        </p>
+        
+        <p class="description">
+            <strong><?php esc_html_e('Note:', 'web-embed'); ?></strong>
+            <?php esc_html_e('CSP frame-ancestors is the modern approach and more secure. X-Frame-Options is deprecated but still widely supported.', 'web-embed'); ?>
+        </p>
+    </div>
+    <?php
+}
+
+/**
+ * Display audit log
+ * 
+ * Shows recent settings changes and admin actions.
+ *
+ * @since 1.0.0
+ * @return void
+ */
+function web_embed_display_audit_log() {
+    $log = web_embed_get_audit_log(20);
+    ?>
+    <p><?php esc_html_e('Recent settings changes and admin actions (last 20 entries):', 'web-embed'); ?></p>
+    
+    <?php if (empty($log)): ?>
+        <p><em><?php esc_html_e('No audit log entries yet.', 'web-embed'); ?></em></p>
+    <?php else: ?>
+        <table class="widefat striped" style="margin-bottom: 15px;">
+            <thead>
+                <tr>
+                    <th><?php esc_html_e('Time', 'web-embed'); ?></th>
+                    <th><?php esc_html_e('User', 'web-embed'); ?></th>
+                    <th><?php esc_html_e('Action', 'web-embed'); ?></th>
+                    <th><?php esc_html_e('IP Address', 'web-embed'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($log as $entry): ?>
+                    <tr>
+                        <td><?php echo esc_html(mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $entry['timestamp'])); ?></td>
+                        <td><?php echo esc_html($entry['user_name']); ?></td>
+                        <td>
+                            <strong><?php echo esc_html($entry['action']); ?></strong><br>
+                            <small><?php echo esc_html($entry['description']); ?></small>
+                        </td>
+                        <td><?php echo esc_html($entry['ip']); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        
+        <form method="post" action="" style="display: inline;">
+            <?php wp_nonce_field('web_embed_audit_nonce'); ?>
+            <input type="submit" 
+                   name="web_embed_clear_audit_log" 
+                   class="button" 
+                   value="<?php esc_attr_e('Clear Audit Log', 'web-embed'); ?>"
+                   onclick="return confirm('<?php esc_attr_e('Are you sure you want to clear the audit log?', 'web-embed'); ?>');">
+        </form>
+    <?php endif; ?>
+    <?php
 }
 

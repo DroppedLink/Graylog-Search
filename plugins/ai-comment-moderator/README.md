@@ -1,12 +1,12 @@
 # AI Comment Moderator
 
-**Version:** 2.1.0  
+**Version:** 2.2.0  
 **Author:** CSE  
 **Requires:** WordPress 5.9+  
 **Requires PHP:** 7.4+  
 **License:** GPLv2 or later
 
-AI-powered comment moderation plugin supporting multiple AI providers (Ollama, OpenAI, Claude, OpenRouter) with intelligent context analysis and advanced features.
+AI-powered comment moderation plugin supporting multiple AI providers (Ollama, OpenAI, Claude, OpenRouter) with intelligent context analysis, structured reason codes, and advanced features.
 
 ## 🎯 Key Features
 
@@ -25,13 +25,15 @@ AI-powered comment moderation plugin supporting multiple AI providers (Ollama, O
 - **User Reputation** - Tracks commenter history
 
 ### Advanced Features
+- **Reason Codes** - Structured 1-10 codes for every moderation decision
 - **Remote Site Management** - Moderate comments from multiple WordPress sites
 - **Batch Processing** - Process hundreds of comments at once
 - **Custom Prompts** - 28+ variables for intelligent decisions
 - **Import/Export** - Share prompts between sites
 - **Cost Tracking** - Monitor API usage and costs
 - **Budget Alerts** - Set spending limits for paid providers
-- **Analytics Dashboard** - Track performance and accuracy
+- **Analytics Dashboard** - Track performance and accuracy with reason code breakdown
+- **Data Reset** - Clear processing history while preserving configuration
 
 ## 🚀 Quick Start
 
@@ -149,6 +151,31 @@ Use these in your prompts for smarter AI decisions:
 - `{is_new_user}` - yes/no
 
 [See all 28 variables →](docs/prompt-variables.md)
+
+## 🏷️ Reason Codes
+
+Every AI decision includes a structured reason code (1-10) for better analytics and transparency:
+
+| Code | Reason | Category |
+|------|--------|----------|
+| 1 | Obvious spam - automated/bot content | 🚫 Critical |
+| 2 | Malicious links detected | 🚫 Critical |
+| 3 | Toxic/abusive language | 🚫 Critical |
+| 4 | Off-topic or irrelevant | ⚠️ Warning |
+| 5 | Multiple suspicious URLs | ⚠️ Warning |
+| 6 | Low-quality content | ⚠️ Warning |
+| 7 | Duplicate/repeated comment | ⚠️ Warning |
+| 8 | Suspicious user patterns | ⚠️ Warning |
+| 9 | Legitimate contribution | ✅ Approved |
+| 10 | Approved - high quality content | ✅ Approved |
+
+**Benefits:**
+- **Better Analytics**: See which types of spam are most common
+- **Improved Training**: Understand AI decision patterns
+- **Enhanced Transparency**: Know exactly why each comment was moderated
+- **Data-Driven Decisions**: Optimize your prompts based on reason code trends
+
+View reason code breakdown in **AI Moderator → Analytics**.
 
 ## 📖 Documentation
 

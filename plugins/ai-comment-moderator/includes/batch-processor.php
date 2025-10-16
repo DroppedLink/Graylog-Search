@@ -185,12 +185,24 @@ class AI_Comment_Moderator_Batch_Processor {
                 $site_name = $comment_data->site_name ?? '';
             }
             
+            // Format reason code display (v2.2.0+)
+            $reason_display = '';
+            if ($result['success'] && !empty($result['reason_code'])) {
+                $reason_label = AI_Comment_Moderator_Reason_Codes::get_code_label($result['reason_code']);
+                $reason_display = sprintf(
+                    ' (Code %d: %s)',
+                    $result['reason_code'],
+                    $reason_label
+                );
+            }
+            
             $results['details'][] = array(
                 'comment_id' => $comment_id,
                 'result' => $result,
                 'snippet' => $comment_snippet,
                 'author' => $comment_author,
-                'site' => $site_name
+                'site' => $site_name,
+                'reason_display' => $reason_display
             );
             
             // Update batch progress

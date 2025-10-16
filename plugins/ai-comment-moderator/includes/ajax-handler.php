@@ -35,6 +35,10 @@ class AI_Comment_Moderator_Ajax_Handler {
         add_action('wp_ajax_ai_moderator_get_dashboard_data', array($this, 'ajax_get_dashboard_data'));
         add_action('wp_ajax_ai_moderator_get_recent_activity', array($this, 'ajax_get_recent_activity'));
         
+        // Data management (v2.2.0+)
+        add_action('wp_ajax_ai_moderator_reset_data', array($this, 'ajax_reset_data'));
+        add_action('wp_ajax_ai_moderator_get_data_stats', array($this, 'ajax_get_data_stats'));
+        
         // Batch processing (handled in batch-processor.php)
         // add_action('wp_ajax_ai_moderator_start_batch', array($this, 'ajax_start_batch'));
         // add_action('wp_ajax_ai_moderator_process_batch_chunk', array($this, 'ajax_process_batch_chunk'));
@@ -472,6 +476,46 @@ class AI_Comment_Moderator_Ajax_Handler {
         } else {
             wp_send_json_error($result['error']);
         }
+    }
+    
+    /**
+     * Reset all processing data (v2.2.0+)
+     */
+    public function ajax_reset_data() {
+        check_ajax_referer('ai_moderator_reset_data', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        // Get current stats before reset
+        $before = AI_Comment_Moderator_Data_Manager::get_data_stats();
+        
+        // Perform reset
+        $success = AI_Comment_Moderator_Data_Manager::reset_processing_data();
+        
+        if ($success) {
+            wp_send_json_success(array(
+                'message' => 'All processing data has been cleared',
+                'cleared' => $before
+            ));
+        } else {
+            wp_send_json_error('Failed to reset data');
+        }
+    }
+    
+    /**
+     * Get data statistics (v2.2.0+)
+     */
+    public function ajax_get_data_stats() {
+        check_ajax_referer('ai_comment_moderator_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        $stats = AI_Comment_Moderator_Data_Manager::get_data_stats();
+        wp_send_json_success($stats);
     }
 }
 

@@ -129,12 +129,14 @@ class AI_Comment_Moderator_Comment_Processor {
             $action_result = $this->apply_comment_action($comment_id, $decision_data['action']);
         }
         
-        // Record the review
+        // Record the review (enhanced with reason codes v2.2.0+)
         $review_data = array(
             'comment_id' => $comment_id,
             'ai_reviewed' => 1,
             'ai_decision' => $decision_data['decision'],
             'ai_confidence' => $decision_data['confidence'],
+            'reason_code' => isset($decision_data['reason_code']) ? $decision_data['reason_code'] : null,
+            'reason_text' => isset($decision_data['reason_text']) ? $decision_data['reason_text'] : null,
             'prompt_id' => $prompt_id,
             'processed_at' => current_time('mysql')
         );
@@ -163,6 +165,8 @@ class AI_Comment_Moderator_Comment_Processor {
             'decision' => $decision_data['decision'],
             'action' => $decision_data['action'],
             'confidence' => $decision_data['confidence'],
+            'reason_code' => isset($decision_data['reason_code']) ? $decision_data['reason_code'] : null,
+            'reason_text' => isset($decision_data['reason_text']) ? $decision_data['reason_text'] : null,
             'ai_response' => $ai_response['response'],
             'processing_time' => $ai_response['processing_time'],
             'action_result' => $action_result
@@ -366,7 +370,7 @@ class AI_Comment_Moderator_Comment_Processor {
     public function render_comment_meta_box($comment) {
         global $wpdb;
         
-        // Get AI review data
+        // Get AI review data (enhanced with reason codes v2.2.0+)
         $review = $wpdb->get_row($wpdb->prepare("
             SELECT r.*, p.name as prompt_name
             FROM {$wpdb->prefix}ai_comment_reviews r
@@ -391,6 +395,12 @@ class AI_Comment_Moderator_Comment_Processor {
                     <p>
                         <strong>Decision:</strong> <?php echo esc_html(ucfirst($review->ai_decision)); ?><br>
                         <strong>Confidence:</strong> <?php echo number_format($review->ai_confidence * 100, 1); ?>%<br>
+                        <?php if ($review->reason_code): ?>
+                            <strong>Reason:</strong> <?php echo AI_Comment_Moderator_Reason_Codes::format_code_display($review->reason_code); ?><br>
+                            <?php if ($review->reason_text): ?>
+                                <em style="font-size: 0.9em; color: #666;"><?php echo esc_html($review->reason_text); ?></em><br>
+                            <?php endif; ?>
+                        <?php endif; ?>
                         <strong>Prompt:</strong> <?php echo esc_html($review->prompt_name); ?><br>
                         <strong>Processed:</strong> <?php echo date('M j, Y H:i', strtotime($review->processed_at)); ?>
                     </p>

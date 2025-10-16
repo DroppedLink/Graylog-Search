@@ -72,11 +72,17 @@ function sp_settings_page() {
 				</tr>
 				<tr>
 					<th scope="row"><label for="sp_env_api_url">API URL</label></th>
-					<td><input name="api_url" id="sp_env_api_url" type="url" class="regular-text" placeholder="https://portainer.example.com" value="<?php echo esc_attr($edit_env['api_url'] ?? ''); ?>" required></td>
+					<td>
+						<input name="api_url" id="sp_env_api_url" type="url" class="regular-text" placeholder="https://portainer.example.com" value="<?php echo esc_attr($edit_env['api_url'] ?? ''); ?>" required>
+						<p class="description" id="sp_api_url_help" style="color:#646970;"></p>
+					</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="sp_env_api_token">API Token</label></th>
-					<td><input name="api_token" id="sp_env_api_token" type="password" class="regular-text" value="<?php echo esc_attr($edit_env['api_token'] ?? ''); ?>" required></td>
+					<td>
+						<input name="api_token" id="sp_env_api_token" type="password" class="regular-text" value="<?php echo esc_attr($edit_env['api_token'] ?? ''); ?>" required>
+						<p class="description" id="sp_api_token_help" style="color:#646970;"></p>
+					</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="sp_env_endpoint_id">Endpoint</label></th>
@@ -157,6 +163,9 @@ function sp_settings_page() {
 	</div>
 	<script type="text/javascript">
 	(function($){
+		function validateUrl(u){ try { var x=new URL(u); return !!(x.protocol && x.host); } catch(e){ return false; } }
+		function setHelp($el, ok, msg){ $el.text(msg).css('color', ok ? '#2271b1' : '#d63638'); }
+
 		$(document).on('click', '.sp-test-env', function(){
 			var key = $(this).data('envkey');
 			$.post(ajaxurl, { action: 'sp_test_connection', nonce: '<?php echo esc_js(wp_create_nonce('sp_nonce')); ?>', envId: key }, function(r){
@@ -173,6 +182,12 @@ function sp_settings_page() {
 			if (!apiUrl || !apiToken) {
 				alert('Please enter API URL and token first');
 				return;
+			}
+			if (!validateUrl(apiUrl)) {
+				setHelp($('#sp_api_url_help'), false, 'Invalid URL format');
+				return;
+			} else {
+				setHelp($('#sp_api_url_help'), true, 'Looks good');
 			}
 			
 			var btn = $(this);
@@ -206,6 +221,17 @@ function sp_settings_page() {
 					select.append('<option value="" disabled>No endpoints found</option>');
 				}
 			});
+		});
+
+		// Live validation
+		$('#sp_env_api_url').on('input blur', function(){
+			var val = $(this).val();
+			if (!val) { setHelp($('#sp_api_url_help'), false, 'URL is required'); return; }
+			setHelp($('#sp_api_url_help'), validateUrl(val), validateUrl(val) ? 'Looks good' : 'Invalid URL format');
+		});
+		$('#sp_env_api_token').on('input blur', function(){
+			var val = $(this).val();
+			setHelp($('#sp_api_token_help'), !!val, val ? 'Looks good' : 'Token is required');
 		});
 	})(jQuery);
 	</script>

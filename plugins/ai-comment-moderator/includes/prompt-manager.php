@@ -300,42 +300,94 @@ class AI_Comment_Moderator_Prompt_Manager {
             '{is_new_user}' => $context['user_history']['is_new_user'] ? 'yes' : 'no'
         );
         
-        return str_replace(array_keys($variables), array_values($variables), $prompt_text);
+        // Replace variables
+        $processed = str_replace(array_keys($variables), array_values($variables), $prompt_text);
+        
+        // Append reason code instructions (v2.2.0+)
+        $processed .= "\n\n[IMPORTANT] Your response must include:
+1. Decision: APPROVE, SPAM, or HOLD
+2. Confidence: 0-100
+3. Reason Code: Choose ONE number (1-10):
+   1 = Obvious spam/bot
+   2 = Malicious links
+   3 = Toxic language
+   4 = Off-topic
+   5 = Multiple suspicious URLs
+   6 = Low quality
+   7 = Duplicate
+   8 = Suspicious patterns
+   9 = Legitimate
+   10 = High quality
+
+Format: Decision: [APPROVE/SPAM/HOLD] | Confidence: [0-100] | Code: [1-10] | Reason: [brief explanation]";
+        
+        return $processed;
     }
     
     /**
-     * Parse AI response and determine action
+     * Parse AI response and determine action (enhanced with reason codes v2.2.0+)
      */
     public static function parse_ai_response($response, $prompt) {
-        $response = strtoupper(trim($response));
+        $original_response = $response;
+        $response_upper = strtoupper(trim($response));
         
-        // Look for key decision words in the response
-        if (strpos($response, 'SPAM') !== false) {
-            return array(
-                'decision' => 'spam',
-                'action' => $prompt->action_spam,
-                'confidence' => self::calculate_confidence($response, 'spam')
-            );
-        } elseif (strpos($response, 'TOXIC') !== false || strpos($response, 'INAPPROPRIATE') !== false || strpos($response, 'RUDE') !== false) {
-            return array(
-                'decision' => 'toxic',
-                'action' => $prompt->action_trash,
-                'confidence' => self::calculate_confidence($response, 'toxic')
-            );
-        } elseif (strpos($response, 'APPROVE') !== false || strpos($response, 'GOOD') !== false || strpos($response, 'ACCEPTABLE') !== false) {
-            return array(
-                'decision' => 'approve',
-                'action' => $prompt->action_approve,
-                'confidence' => self::calculate_confidence($response, 'approve')
-            );
-        }
-        
-        // Default to approval if unclear
-        return array(
+        // Initialize result
+        $result = array(
             'decision' => 'unclear',
             'action' => $prompt->action_approve,
-            'confidence' => 0.1
+            'confidence' => 0.1,
+            'reason_code' => null,
+            'reason_text' => null
         );
+        
+        // Extract reason code (Code: 5)
+        if (preg_match('/Code:\s*(\d+)/i', $original_response, $code_match)) {
+            $code = (int)$code_match[1];
+            // Validate code is 1-10
+            if ($code >= 1 && $code <= 10) {
+                $result['reason_code'] = $code;
+            }
+        }
+        
+        // Extract reason explanation (Reason: text)
+        if (preg_match('/Reason:\s*(.+?)(?:\||$)/is', $original_response, $reason_match)) {
+            $result['reason_text'] = trim($reason_match[1]);
+        }
+        
+        // Extract confidence (Confidence: 85)
+        if (preg_match('/Confidence:\s*(\d+)/i', $original_response, $conf_match)) {
+            $confidence = (int)$conf_match[1];
+            $result['confidence'] = $confidence / 100.0; // Convert to 0-1 scale
+        }
+        
+        // Look for key decision words in the response
+        if (strpos($response_upper, 'SPAM') !== false) {
+            $result['decision'] = 'spam';
+            $result['action'] = $prompt->action_spam;
+            if (!isset($conf_match)) {
+                $result['confidence'] = self::calculate_confidence($response_upper, 'spam');
+            }
+        } elseif (strpos($response_upper, 'TOXIC') !== false || strpos($response_upper, 'INAPPROPRIATE') !== false || strpos($response_upper, 'RUDE') !== false) {
+            $result['decision'] = 'toxic';
+            $result['action'] = $prompt->action_trash;
+            if (!isset($conf_match)) {
+                $result['confidence'] = self::calculate_confidence($response_upper, 'toxic');
+            }
+        } elseif (strpos($response_upper, 'APPROVE') !== false || strpos($response_upper, 'GOOD') !== false || strpos($response_upper, 'ACCEPTABLE') !== false) {
+            $result['decision'] = 'approve';
+            $result['action'] = $prompt->action_approve;
+            if (!isset($conf_match)) {
+                $result['confidence'] = self::calculate_confidence($response_upper, 'approve');
+            }
+        } elseif (strpos($response_upper, 'HOLD') !== false) {
+            $result['decision'] = 'hold';
+            $result['action'] = 'hold';
+            if (!isset($conf_match)) {
+                $result['confidence'] = 0.5;
+            }
+        }
+        
+        return $result;
     }
     
     /**

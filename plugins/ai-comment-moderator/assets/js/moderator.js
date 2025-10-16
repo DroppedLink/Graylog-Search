@@ -262,14 +262,18 @@ jQuery(document).ready(function($) {
             var message = '';
             
             if (result.success) {
-                // Success - show decision with details
+                // Success - show decision with details (enhanced with reason codes v2.2.0+)
                 var authorInfo = detail.author ? ' by <strong>' + escapeHtml(detail.author) + '</strong>' : '';
                 var siteInfo = detail.site ? ' [' + escapeHtml(detail.site) + ']' : '';
                 var snippet = detail.snippet ? '<div style="margin-left: 20px; color: #666; font-size: 0.9em;">"' + escapeHtml(detail.snippet) + '"</div>' : '';
                 
+                // Add reason display if available
+                var reasonInfo = detail.reason_display ? '<span style="color: #666;">' + escapeHtml(detail.reason_display) + '</span>' : '';
+                
                 message = 'Comment #' + detail.comment_id + authorInfo + siteInfo + ': ' +
                          '<span style="color: #2271b1; font-weight: bold;">' + result.decision + '</span> → ' +
                          '<span style="color: #135e96;">' + result.action + '</span>' +
+                         (reasonInfo ? ' ' + reasonInfo : '') +
                          snippet;
             } else {
                 // Error - show error message
@@ -581,4 +585,76 @@ jQuery(document).ready(function($) {
             $('.tooltip-popup').remove();
         }
     );
+    
+    // Data Reset Functionality (v2.2.0+)
+    
+    /**
+     * Load current data statistics
+     */
+    function loadDataStats() {
+        if ($('#reviews-count').length === 0) {
+            return; // Not on the settings page
+        }
+        
+        $.post(ajaxurl, {
+            action: 'ai_moderator_get_data_stats',
+            nonce: aiModeratorAdmin.nonce
+        }, function(response) {
+            if (response.success) {
+                $('#reviews-count').text(response.data.reviews.toLocaleString());
+                $('#corrections-count').text(response.data.corrections.toLocaleString());
+                $('#remote-comments-count').text(response.data.remote_comments.toLocaleString());
+            } else {
+                console.error('Failed to load data stats:', response);
+            }
+        }).fail(function(xhr, status, error) {
+            console.error('Network error loading data stats:', error);
+        });
+    }
+    
+    /**
+     * Reset processing data handler
+     */
+    $('#reset-data-btn').on('click', function() {
+        if (!confirm('Are you sure you want to delete all AI moderation history and analytics?\n\nThis will clear:\n• All processed comments\n• All analytics data\n• All correction tracking\n• All remote comments cache\n\nYour settings, prompts, and remote sites will be preserved.\n\nThis cannot be undone!')) {
+            return;
+        }
+        
+        var $btn = $(this);
+        var $status = $('.reset-status');
+        
+        $btn.prop('disabled', true).text('Resetting...');
+        $status.html('<span style="color: #666;">⏳ Clearing data...</span>');
+        
+        $.post(ajaxurl, {
+            action: 'ai_moderator_reset_data',
+            nonce: $('#ai_moderator_reset_data_nonce').val()
+        }, function(response) {
+            if (response.success) {
+                $status.html('<span style="color: #46b450;">✓ Data cleared successfully! Cleared ' + 
+                    response.data.cleared.reviews + ' reviews, ' +
+                    response.data.cleared.corrections + ' corrections, ' +
+                    response.data.cleared.remote_comments + ' remote comments.</span>');
+                
+                // Refresh counts
+                loadDataStats();
+                
+                // Reset button after delay
+                setTimeout(function() {
+                    $status.html('');
+                    $btn.prop('disabled', false).text('🗑️ Reset Processing Data');
+                }, 5000);
+            } else {
+                $status.html('<span style="color: #dc3232;">✗ Error: ' + (response.data || 'Unknown error') + '</span>');
+                $btn.prop('disabled', false).text('🗑️ Reset Processing Data');
+            }
+        }).fail(function(xhr, status, error) {
+            console.error('Reset data network error:', xhr, status, error);
+            $status.html('<span style="color: #dc3232;">✗ Network error: ' + error + '</span>');
+            $btn.prop('disabled', false).text('🗑️ Reset Processing Data');
+        });
+    });
+    
+    // Load data stats on page load (if on settings page)
+    loadDataStats();
 });

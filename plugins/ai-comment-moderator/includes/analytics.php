@@ -32,6 +32,17 @@ function ai_moderator_analytics_page() {
         WHERE ai_reviewed = 1
     ");
     
+    // Get reason code statistics (v2.2.0+)
+    $reason_stats = $wpdb->get_results("
+        SELECT reason_code, COUNT(*) as count 
+        FROM {$wpdb->prefix}ai_comment_reviews 
+        WHERE reason_code IS NOT NULL
+        GROUP BY reason_code 
+        ORDER BY reason_code ASC
+    ");
+    
+    $total_with_codes = array_sum(array_column($reason_stats, 'count'));
+    
     ?>
     <div class="wrap">
         <h1>AI Moderation Analytics</h1>
@@ -61,12 +72,68 @@ function ai_moderator_analytics_page() {
             <p class="description">Average confidence score across all AI decisions</p>
         </div>
         
+        <?php if (!empty($reason_stats)): ?>
+        <div class="ai-moderator-widget">
+            <h2>Top Moderation Reasons</h2>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Code</th>
+                        <th>Reason</th>
+                        <th style="width: 100px;">Count</th>
+                        <th style="width: 100px;">Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($reason_stats as $stat): ?>
+                        <tr>
+                            <td style="text-align: center;">
+                                <?php echo AI_Comment_Moderator_Reason_Codes::format_code_display($stat->reason_code, false); ?>
+                            </td>
+                            <td><?php echo esc_html(AI_Comment_Moderator_Reason_Codes::get_code_label($stat->reason_code)); ?></td>
+                            <td style="text-align: center;"><?php echo number_format($stat->count); ?></td>
+                            <td style="text-align: center;">
+                                <?php echo $total_with_codes > 0 ? round($stat->count / $total_with_codes * 100, 1) : 0; ?>%
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+        
         <div class="ai-moderator-widget">
             <h2>Export Data</h2>
             <p>Download complete moderation logs for analysis</p>
             <a href="<?php echo admin_url('admin.php?page=ai-comment-moderator-analytics&export=csv'); ?>" class="button button-primary">Export to CSV</a>
         </div>
     </div>
+    
+    <style>
+        .reason-code {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .reason-critical {
+            background-color: #d63638;
+            color: white;
+        }
+        .reason-warning {
+            background-color: #dba617;
+            color: white;
+        }
+        .reason-approved {
+            background-color: #46b450;
+            color: white;
+        }
+        .reason-unknown {
+            background-color: #8c8f94;
+            color: white;
+        }
+    </style>
     <?php
     
     // Handle export

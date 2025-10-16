@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: AI Comment Moderator
- * Description: Multi-provider AI comment moderation (Ollama, OpenAI, Claude, OpenRouter) with advanced features
- * Version: 2.1.0
+ * Description: Multi-provider AI comment moderation (Ollama, OpenAI, Claude, OpenRouter) with reason codes and advanced features
+ * Version: 2.2.0
  * Author: CSE
  */
 
@@ -11,7 +11,7 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('AI_COMMENT_MODERATOR_VERSION', '2.1.0');
+define('AI_COMMENT_MODERATOR_VERSION', '2.2.0');
 define('AI_COMMENT_MODERATOR_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AI_COMMENT_MODERATOR_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -24,6 +24,8 @@ require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/ai-provider-factory.php
 require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/ollama-client.php';
 
 // Core includes
+require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/reason-codes.php';
+require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/data-manager.php';
 require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/context-analyzer.php';
 require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/reputation-manager.php';
 require_once AI_COMMENT_MODERATOR_PLUGIN_DIR . 'includes/webhook-handler.php';
@@ -45,6 +47,9 @@ register_activation_hook(__FILE__, 'ai_comment_moderator_activate');
 function ai_comment_moderator_activate() {
     // Create database tables
     ai_comment_moderator_create_tables();
+    
+    // Run migration for existing installations
+    ai_comment_moderator_migrate_database();
     
     // Set default options (only if they don't exist)
     // add_option will not overwrite existing values
@@ -183,6 +188,8 @@ function ai_comment_moderator_create_tables() {
         ai_decision varchar(20) DEFAULT '',
         ai_confidence float DEFAULT 0,
         confidence_score float DEFAULT 0,
+        reason_code int(2) DEFAULT NULL,
+        reason_text text DEFAULT NULL,
         prompt_id mediumint(9) DEFAULT NULL,
         requires_manual_review tinyint(1) DEFAULT 0,
         manual_review_status varchar(20) DEFAULT 'pending',
@@ -193,7 +200,8 @@ function ai_comment_moderator_create_tables() {
         KEY ai_reviewed (ai_reviewed),
         KEY ai_decision (ai_decision),
         KEY requires_manual_review (requires_manual_review),
-        KEY confidence_score (confidence_score)
+        KEY confidence_score (confidence_score),
+        KEY reason_code (reason_code)
     ) $charset_collate;";
     
     // Table for storing prompts
@@ -352,6 +360,8 @@ function ai_comment_moderator_create_tables() {
         provider varchar(50) NOT NULL,
         model varchar(100) NOT NULL,
         confidence int(11) NOT NULL,
+        ai_reason_code int(2) DEFAULT NULL,
+        admin_reason_code int(2) DEFAULT NULL,
         corrected_at datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
         KEY comment_id (comment_id),
@@ -388,6 +398,36 @@ function ai_comment_moderator_create_tables() {
     dbDelta($sql_provider_usage);
     dbDelta($sql_corrections);
     dbDelta($sql_notifications);
+}
+
+// Database migration for existing installations
+function ai_comment_moderator_migrate_database() {
+    global $wpdb;
+    
+    // Check if reason_code column exists in ai_comment_reviews
+    $column_exists = $wpdb->get_results(
+        "SHOW COLUMNS FROM {$wpdb->prefix}ai_comment_reviews LIKE 'reason_code'"
+    );
+    
+    if (empty($column_exists)) {
+        // Add reason_code and reason_text columns to ai_comment_reviews
+        $wpdb->query("ALTER TABLE {$wpdb->prefix}ai_comment_reviews 
+                      ADD COLUMN reason_code INT(2) DEFAULT NULL AFTER confidence_score,
+                      ADD COLUMN reason_text TEXT DEFAULT NULL AFTER reason_code,
+                      ADD INDEX idx_reason_code (reason_code)");
+    }
+    
+    // Check if reason code columns exist in ai_corrections
+    $ai_reason_column_exists = $wpdb->get_results(
+        "SHOW COLUMNS FROM {$wpdb->prefix}ai_corrections LIKE 'ai_reason_code'"
+    );
+    
+    if (empty($ai_reason_column_exists)) {
+        // Add reason code columns to ai_corrections
+        $wpdb->query("ALTER TABLE {$wpdb->prefix}ai_corrections 
+                      ADD COLUMN ai_reason_code INT(2) DEFAULT NULL AFTER confidence,
+                      ADD COLUMN admin_reason_code INT(2) DEFAULT NULL AFTER ai_reason_code");
+    }
 }
 
 // Create default prompts

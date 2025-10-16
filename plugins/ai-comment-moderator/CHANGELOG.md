@@ -5,6 +5,54 @@ All notable changes to AI Comment Moderator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-01-16
+
+### 🎯 Reason Codes & Data Reset
+
+### Added
+
+#### Reason Code System
+- **Structured Reason Codes (1-10)**: Every AI decision now includes a standardized reason code
+  - Code 1: Obvious spam - automated/bot content
+  - Code 2: Malicious links detected
+  - Code 3: Toxic/abusive language
+  - Code 4: Off-topic or irrelevant
+  - Code 5: Multiple suspicious URLs
+  - Code 6: Low-quality content
+  - Code 7: Duplicate/repeated comment
+  - Code 8: Suspicious user patterns
+  - Code 9: Legitimate contribution
+  - Code 10: Approved - high quality content
+
+- **Enhanced AI Prompts**: Automatically instructs AI to provide reason codes with explanations
+- **Database Schema**: Added `reason_code` and `reason_text` columns to reviews and corrections tables
+- **Analytics Dashboard**: New "Top Moderation Reasons" table with breakdown by code
+- **Batch Processing**: Displays reason codes in real-time processing output
+- **Comment Meta Box**: Shows reason codes with color-coded badges in comment edit screen
+
+#### Data Reset Feature
+- **Danger Zone UI**: New section in settings for data management
+- **Reset Processing Data**: Clear all AI moderation history while preserving configuration
+  - Clears: AI reviews, usage stats, corrections, logs, remote comment cache
+  - Preserves: Settings, prompts, remote sites, AI provider configurations
+- **Real-time Stats Display**: Shows current data counts before reset
+- **Confirmation Dialog**: Multi-step confirmation to prevent accidental data loss
+- **AJAX Implementation**: Smooth, non-blocking reset operation with progress feedback
+
+### Improved
+- **Better Analytics**: Reason code tracking provides deeper insights into moderation patterns
+- **Enhanced Transparency**: Users can see exactly why each comment was moderated
+- **Data Management**: Easy way to start fresh without losing configuration
+- **Database Efficiency**: Added indexes on reason_code for faster queries
+
+### Technical Changes
+- Added `AI_Comment_Moderator_Reason_Codes` class for centralized code management
+- Added `AI_Comment_Moderator_Data_Manager` class for data operations
+- Enhanced `parse_ai_response()` to extract structured reason codes
+- Updated batch processor to format and display reason codes
+- Added AJAX endpoints: `ai_moderator_reset_data`, `ai_moderator_get_data_stats`
+- Database migration for existing installations
+
 ## [2.1.0] - 2025-01-15
 
 ### 🎯 Phase 2: Enhanced Moderation Features
