@@ -154,44 +154,49 @@ function graylog_build_query($search_query, $search_mode, $filter_out) {
             $query_parts[] = trim($search_query);
         } else {
             // Simple mode: search across multiple common fields
-            // Fields to search: message, fqdn, source, level, facility, application_name
-            $fields = array('message', 'fqdn', 'source', 'level', 'facility', 'application_name');
+            // Use only trailing wildcards to avoid expensive leading wildcard queries
             $terms = graylog_parse_multivalue_input($search_query, false); // Don't split on spaces
             
-            $field_queries = array();
+            $term_queries = array();
             foreach ($terms as $term) {
+                $term = trim($term);
                 if (empty($term)) {
                     continue;
                 }
                 
-                // For each term, create an OR query across all fields
-                $term_field_parts = array();
+                // Escape special Lucene characters except * and ?
+                $term = preg_replace('/([+\-&|!(){}\[\]^"~:\\\])/', '\\\\$1', $term);
+                
+                // Add trailing wildcard for partial matching (unless user specified wildcards)
+                if (strpos($term, '*') === false && strpos($term, '?') === false) {
+                    $term = $term . '*';
+                }
+                
+                // Build a simple query that searches common fields
+                // Use OR for broad matching across fields
+                $fields = array('message', 'fqdn', 'source');
+                $field_parts = array();
+                
                 foreach ($fields as $field) {
-                    // Add wildcards for partial matching
-                    $search_term = $term;
-                    if (strpos($search_term, '*') === false && strpos($search_term, '?') === false) {
-                        $search_term = '*' . $search_term . '*';
-                    }
-                    
-                    // Wrap in quotes if contains spaces
-                    if (preg_match('/\s/', $search_term)) {
-                        $term_field_parts[] = $field . ':"' . $search_term . '"';
+                    // Quote the term if it contains spaces (even with wildcard)
+                    if (preg_match('/\s/', str_replace('*', '', $term))) {
+                        $field_parts[] = $field . ':"' . $term . '"';
                     } else {
-                        $term_field_parts[] = $field . ':' . $search_term;
+                        $field_parts[] = $field . ':' . $term;
                     }
                 }
                 
-                // OR together all field searches for this term
-                if (count($term_field_parts) > 0) {
-                    $field_queries[] = '(' . implode(' OR ', $term_field_parts) . ')';
+                // Combine fields for this term
+                if (count($field_parts) > 0) {
+                    $term_queries[] = '(' . implode(' OR ', $field_parts) . ')';
                 }
             }
             
-            // OR together all term queries
-            if (count($field_queries) > 1) {
-                $query_parts[] = '(' . implode(' OR ', $field_queries) . ')';
-            } elseif (count($field_queries) === 1) {
-                $query_parts[] = $field_queries[0];
+            // Combine all term queries
+            if (count($term_queries) > 1) {
+                $query_parts[] = '(' . implode(' OR ', $term_queries) . ')';
+            } elseif (count($term_queries) === 1) {
+                $query_parts[] = $term_queries[0];
             }
         }
     }
