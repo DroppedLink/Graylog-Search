@@ -46,7 +46,7 @@
     color: var(--graylog-text-primary, #333);
 }
 
-.query-builder-close {
+.query-builder-header .query-builder-close {
     background: none;
     border: none;
     font-size: 28px;
@@ -62,9 +62,23 @@
     transition: all 0.2s;
 }
 
-.query-builder-close:hover {
+.query-builder-header .query-builder-close:hover {
     background: var(--graylog-bg-primary, #fff);
     color: var(--graylog-text-primary, #333);
+}
+
+/* Ensure footer cancel button displays as a normal button */
+.query-builder-footer .query-builder-close {
+    width: auto;
+    height: auto;
+    padding: 6px 12px;
+    display: inline-block;
+    background: #f0f0f1;
+    border: 1px solid #2c3338;
+    border-radius: 3px;
+    color: #2c3338;
+    font-size: 14px;
+    cursor: pointer;
 }
 
 .query-builder-body {
@@ -279,6 +293,15 @@
     border-top: 2px solid var(--graylog-border-color, #ccd0d4);
     background: var(--graylog-bg-secondary, #f8f9fa);
     flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.query-builder-footer button {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
 }
 
 /* Template Selector Modal */

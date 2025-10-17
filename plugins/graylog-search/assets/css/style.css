@@ -525,21 +525,34 @@
 .graylog-search-form-container .form-table th {
     width: 200px;
     font-weight: 600;
+    vertical-align: top;
+    padding-top: 12px;
+}
+
+.graylog-search-form-container .form-table td {
+    max-width: 600px;
 }
 
 .graylog-search-form-container input[type="text"],
-.graylog-search-form-container textarea,
 .graylog-search-form-container select {
     width: 100%;
     max-width: 300px;
+    box-sizing: border-box;
 }
 
 .graylog-search-form-container textarea {
+    width: 100%;
+    max-width: 600px;
+    box-sizing: border-box;
     resize: vertical;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 13px;
     line-height: 1.4;
-    padding: 6px 8px;
+    padding: 8px 10px;
+}
+
+.graylog-search-form-container textarea.search-query-input {
+    min-height: 80px;
 }
 
 /* Compact Shortcode Form */
@@ -571,6 +584,8 @@
 .graylog-form-col {
     flex: 1;
     min-width: 200px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .graylog-form-col label {
@@ -584,10 +599,12 @@
 .graylog-input,
 .graylog-select {
     width: 100%;
+    max-width: 100%;
     padding: 8px 12px;
     border: 1px solid #ced4da;
     border-radius: 4px;
     font-size: 14px;
+    box-sizing: border-box;
     transition: border-color 0.15s;
 }
 
@@ -596,6 +613,11 @@ textarea.graylog-input {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     line-height: 1.4;
     min-height: 60px;
+    max-height: 200px;
+}
+
+.graylog-form-col textarea.search-query-input {
+    min-height: 80px;
 }
 
 .graylog-input:focus,
@@ -1550,6 +1572,57 @@ textarea.graylog-input {
     font-size: 18px;
 }
 
+/* Refinement Toast Notifications */
+.graylog-refinement-toast {
+    position: fixed;
+    top: 80px;
+    right: -400px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 16px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    z-index: 999999;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 400px;
+    transition: right 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.graylog-refinement-toast.show {
+    right: 20px;
+}
+
+.graylog-refinement-toast .toast-icon {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.graylog-refinement-toast .toast-message {
+    flex: 1;
+    line-height: 1.4;
+}
+
+/* Toast type variations */
+.graylog-toast-refine {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.graylog-toast-filter {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.graylog-toast-highlight {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.graylog-toast-success {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
 /* Responsive */
 @media screen and (max-width: 782px) {
     .graylog-search-form-container .form-table th {
@@ -1570,6 +1643,19 @@ textarea.graylog-input {
     
     .message-text {
         font-size: 12px;
+    }
+    
+    /* Mobile toast adjustments */
+    .graylog-refinement-toast {
+        right: -100%;
+        max-width: 90%;
+        font-size: 13px;
+        padding: 14px 18px;
+        top: 60px;
+    }
+    
+    .graylog-refinement-toast.show {
+        right: 5%;
     }
 }
 

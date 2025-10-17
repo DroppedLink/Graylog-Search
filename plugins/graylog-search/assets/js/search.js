@@ -196,9 +196,9 @@ jQuery(document).ready(function($) {
             nonce: graylogSearch.nonce,
             search_query: searchData.query,
             search_mode: searchData.mode,
-            filter_out: interfaceType === 'admin' ? $('#filter_out').val() : $form.find('.filter-out').val(),
-            time_range: interfaceType === 'admin' ? $('#time_range').val() : $form.find('.time-range').val(),
-            limit: interfaceType === 'admin' ? $('#result_limit').val() : $form.find('.result-limit').val()
+            filter_out: interfaceType === 'admin' ? $('#filter-out, #filter_out, [name="filter_out"]').val() : $form.find('[name="filter_out"], .filter-out, #filter-out').val(),
+            time_range: interfaceType === 'admin' ? $('#time-range, #time_range, [name="time_range"]').val() : $form.find('[name="time_range"], .time-range, #time-range').val(),
+            limit: interfaceType === 'admin' ? $('#result-limit, #result_limit, [name="result_limit"]').val() : $form.find('[name="result_limit"], .result-limit, #result-limit').val()
         };
         
         console.log('Form Data:', formData);
@@ -667,12 +667,77 @@ jQuery(document).ready(function($) {
         }, 100);
     }
     
-    // Add filter
+    // Add filter - SMART MODE: Adds to filter_out field and re-runs search
     function addFilter(filterText) {
         if (activeFilters.indexOf(filterText) === -1) {
             activeFilters.push(filterText);
+            
+            // Find the filter out field - try multiple selectors with broader search
+            var $filterInput = $('textarea[name="filter_out"]').first();
+            if ($filterInput.length === 0) {
+                $filterInput = $('input[name="filter_out"]').first();
+            }
+            if ($filterInput.length === 0) {
+                $filterInput = $('#filter-out').first();
+            }
+            if ($filterInput.length === 0) {
+                $filterInput = $('textarea.filter-out').first();
+            }
+            
+            // Debug: Log what we're finding
+            console.log('Looking for filter_out field...');
+            console.log('Found field:', $filterInput.length > 0 ? 'YES' : 'NO');
+            if ($filterInput.length > 0) {
+                console.log('Field ID:', $filterInput.attr('id'));
+                console.log('Field Name:', $filterInput.attr('name'));
+            } else {
+                console.log('Available filter fields on page:', $('textarea, input').filter(function() {
+                    var name = $(this).attr('name') || '';
+                    var id = $(this).attr('id') || '';
+                    return name.indexOf('filter') !== -1 || id.indexOf('filter') !== -1;
+                }).map(function() {
+                    return $(this).attr('name') + ' / ' + $(this).attr('id');
+                }).get());
+            }
+            
+            // Check if we found the input
+            if ($filterInput.length === 0) {
+                console.warn('Graylog Search: Could not find filter_out field for query refinement');
+                console.warn('Falling back to client-side filtering');
+                // Fallback to client-side filtering
+                applyFilters();
+                return;
+            }
+            
+            // Get current filter value (handle undefined)
+            var currentFilters = ($filterInput.val() || '').trim();
+            
+            // Add term to existing filters
+            if (currentFilters) {
+                // Check if term already exists
+                if (currentFilters.toLowerCase().indexOf(filterText.toLowerCase()) === -1) {
+                    $filterInput.val(currentFilters + '\n' + filterText);
+                }
+            } else {
+                $filterInput.val(filterText);
+            }
+            
+            // Re-run the search automatically by triggering form submission
+            setTimeout(function() {
+                // Find the form (works for both admin and shortcode)
+                var $form = $filterInput.closest('form');
+                
+                if ($form.length > 0) {
+                    // Trigger the form submission event (will be caught by our handlers)
+                    $form.trigger('submit');
+                } else {
+                    console.warn('Graylog Search: Could not find search form');
+                    // Fallback to client-side filtering
+                    applyFilters();
+                }
+            }, 500);
+            
             updateFilterDisplay();
-            applyFilters();
         }
     }
     
@@ -712,12 +777,51 @@ jQuery(document).ready(function($) {
         updateFilterDisplay();
     }
     
-    // Keep only rows containing text
+    // Keep only rows containing text - SMART MODE: Refines search query and re-runs
     function addKeepOnlyFilter(text) {
         if (keepOnlyFilters.indexOf(text) === -1) {
             keepOnlyFilters.push(text);
+            
+            // Find the search input field - try multiple selectors
+            var $searchInput = $('textarea[name="search_query"], input[name="search_query"], #search-query, textarea.search-query-input').first();
+            
+            // Check if we found the input
+            if ($searchInput.length === 0) {
+                console.warn('Graylog Search: Could not find search input field for query refinement');
+                // Fallback to client-side filtering
+                applyKeepOnlyFilters();
+                return;
+            }
+            
+            // Get current query value (handle undefined)
+            var currentQuery = ($searchInput.val() || '').trim();
+            
+            // Add term to existing query
+            if (currentQuery) {
+                // Check if term already exists
+                if (currentQuery.toLowerCase().indexOf(text.toLowerCase()) === -1) {
+                    $searchInput.val(currentQuery + '\n' + text);
+                }
+            } else {
+                $searchInput.val(text);
+            }
+            
+            // Re-run the search automatically by triggering form submission
+            setTimeout(function() {
+                // Find the form (works for both admin and shortcode)
+                var $form = $searchInput.closest('form');
+                
+                if ($form.length > 0) {
+                    // Trigger the form submission event (will be caught by our handlers)
+                    $form.trigger('submit');
+                } else {
+                    console.warn('Graylog Search: Could not find search form');
+                    // Fallback to client-side filtering
+                    applyKeepOnlyFilters();
+                }
+            }, 500);
+            
             updateFilterDisplay();
-            applyKeepOnlyFilters();
         }
     }
     
@@ -834,59 +938,28 @@ jQuery(document).ready(function($) {
     function updateFilterDisplay() {
         var $container = $('.active-filters-container');
         
-        if (activeFilters.length === 0 && keepOnlyFilters.length === 0 && activeHighlights.length === 0) {
+        // Only show highlights now - "Filter Out" and "Keep Only" are managed in form fields
+        if (activeHighlights.length === 0) {
             $container.hide();
             return;
         }
         
         var html = '<div class="active-filters">';
         
-        // Filter Out section
-        if (activeFilters.length > 0) {
-            html += '<div class="filter-section">';
-            html += '<span class="filters-label"><span class="dashicons dashicons-dismiss"></span> Filtering out:</span> ';
-            
-            activeFilters.forEach(function(filter) {
-                var truncated = filter.length > 30 ? filter.substring(0, 30) + '...' : filter;
-                html += '<span class="filter-badge filter-out-badge" data-filter="' + escapeHtml(filter) + '" data-type="filterout">';
-                html += escapeHtml(truncated);
-                html += ' <button class="remove-filter" title="Remove filter">×</button>';
-                html += '</span> ';
-            });
-            html += '</div>';
-        }
+        // Highlights section (visual-only, doesn't modify query)
+        html += '<div class="filter-section">';
+        html += '<span class="filters-label"><span class="dashicons dashicons-art"></span> Highlighted:</span> ';
         
-        // Keep Only section
-        if (keepOnlyFilters.length > 0) {
-            html += '<div class="filter-section">';
-            html += '<span class="filters-label"><span class="dashicons dashicons-visibility"></span> Keeping only:</span> ';
-            
-            keepOnlyFilters.forEach(function(filter) {
-                var truncated = filter.length > 30 ? filter.substring(0, 30) + '...' : filter;
-                html += '<span class="filter-badge keep-only-badge" data-filter="' + escapeHtml(filter) + '" data-type="keeponly">';
-                html += escapeHtml(truncated);
-                html += ' <button class="remove-filter" title="Remove filter">×</button>';
-                html += '</span> ';
-            });
-            html += '</div>';
-        }
+        activeHighlights.forEach(function(highlight) {
+            var truncated = highlight.length > 30 ? highlight.substring(0, 30) + '...' : highlight;
+            html += '<span class="filter-badge highlight-badge" data-filter="' + escapeHtml(highlight) + '" data-type="highlight">';
+            html += escapeHtml(truncated);
+            html += ' <button class="remove-filter" title="Remove highlight">×</button>';
+            html += '</span> ';
+        });
+        html += '</div>';
         
-        // Highlights section
-        if (activeHighlights.length > 0) {
-            html += '<div class="filter-section">';
-            html += '<span class="filters-label"><span class="dashicons dashicons-art"></span> Highlighted:</span> ';
-            
-            activeHighlights.forEach(function(highlight) {
-                var truncated = highlight.length > 30 ? highlight.substring(0, 30) + '...' : highlight;
-                html += '<span class="filter-badge highlight-badge" data-filter="' + escapeHtml(highlight) + '" data-type="highlight">';
-                html += escapeHtml(truncated);
-                html += ' <button class="remove-filter" title="Remove highlight">×</button>';
-                html += '</span> ';
-            });
-            html += '</div>';
-        }
-        
-        html += '<button class="clear-all-filters">Clear All</button>';
+        html += '<button class="clear-all-highlights">Clear All Highlights</button>';
         html += '</div>';
         
         $container.html(html).show();
@@ -908,10 +981,8 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Handle clear all filters click
-    $(document).on('click', '.clear-all-filters', function() {
-        clearAllFilters();
-        clearAllKeepOnlyFilters();
+    // Handle clear all highlights click
+    $(document).on('click', '.clear-all-highlights', function() {
         clearAllHighlights();
     });
     
@@ -1167,6 +1238,35 @@ jQuery(document).ready(function($) {
                 $notification.remove();
             }, 300);
         }, 4000);
+    }
+    
+    // Show refinement toast with icon and action type
+    function showRefinementToast(message, action) {
+        var icons = {
+            'refine': '✨',
+            'filter': '🚫',
+            'highlight': '🎨',
+            'success': '✅'
+        };
+        
+        var icon = icons[action] || '💡';
+        var $toast = $('<div class="graylog-refinement-toast graylog-toast-' + action + '"></div>');
+        $toast.html('<span class="toast-icon">' + icon + '</span> <span class="toast-message">' + escapeHtml(message) + '</span>');
+        
+        $('body').append($toast);
+        
+        // Trigger animation
+        setTimeout(function() {
+            $toast.addClass('show');
+        }, 10);
+        
+        // Auto-hide after 3 seconds
+        setTimeout(function() {
+            $toast.removeClass('show');
+            setTimeout(function() {
+                $toast.remove();
+            }, 300);
+        }, 3000);
     }
     
     // Handle auto-refresh toggle
@@ -1660,8 +1760,8 @@ jQuery(document).ready(function($) {
         var filters = {
             fqdn: $('#search_fqdn').val() || $('.search-fqdn').val(),
             search_terms: $('#search_terms').val() || $('.search-terms').val(),
-            filter_out: $('#filter_out').val() || $('.filter-out').val(),
-            time_range: $('#time_range').val() || $('.time-range').val()
+            filter_out: $('#filter-out, #filter_out, [name="filter_out"]').val() || $('.filter-out').val(),
+            time_range: $('#time-range, #time_range, [name="time_range"]').val() || $('.time-range').val()
         };
         
         $.ajax({
@@ -2063,8 +2163,8 @@ jQuery(document).ready(function($) {
             name: searchName,
             search_query: searchData.query,
             search_mode: searchData.mode,
-            filter_out: $('#filter_out').val(),
-            time_range: $('#time_range').val()
+            filter_out: $('#filter-out, #filter_out, [name="filter_out"]').val(),
+            time_range: $('#time-range, #time_range, [name="time_range"]').val()
         };
         
         $.ajax({
@@ -2109,8 +2209,8 @@ jQuery(document).ready(function($) {
                         $('#search_query_advanced').val(data.search_query || '');
                     }
                     
-                    $('#filter_out').val(data.filter_out || '');
-                    $('#time_range').val(data.time_range || 86400);
+                    $('#filter-out, #filter_out, [name="filter_out"]').val(data.filter_out || '');
+                    $('#time-range, #time_range, [name="time_range"]').val(data.time_range || 86400);
                     
                     // Automatically trigger search
                     $('#graylog-search-form').trigger('submit');
@@ -2173,8 +2273,8 @@ jQuery(document).ready(function($) {
                             $('#search_query_advanced').val(data.search_query || '');
                         }
                         
-                        $('#filter_out').val(data.filter_out || '');
-                        $('#time_range').val(data.time_range || 86400);
+                        $('#filter-out, #filter_out, [name="filter_out"]').val(data.filter_out || '');
+                        $('#time-range, #time_range, [name="time_range"]').val(data.time_range || 86400);
                         
                         // Automatically trigger search
                         $('#graylog-search-form').trigger('submit');
@@ -2197,8 +2297,8 @@ jQuery(document).ready(function($) {
         if (filter) {
             $('#search_fqdn').val(filter.data.fqdn || '');
             $('#search_terms').val(filter.data.search_terms || '');
-            $('#filter_out').val(filter.data.filter_out || '');
-            $('#time_range').val(filter.data.time_range || 86400);
+            $('#filter-out, #filter_out, [name="filter_out"]').val(filter.data.filter_out || '');
+            $('#time-range, #time_range, [name="time_range"]').val(filter.data.time_range || 86400);
             
             // Automatically trigger search
             $('#graylog-search-form').trigger('submit');
