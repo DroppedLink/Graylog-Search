@@ -13,14 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom field mappings
 - Email alerts for saved searches
 
-## [1.0.6] - 2025-10-17
+## [1.0.7] - 2025-10-17
 
 ### Changed
-- **Restored Development Plugins**: Re-added plugin folders that were accidentally removed
-  - plugins/ai-comment-moderator/
-  - plugins/stackpilot/
-  - plugins/web-embed/
-  - These are development/companion plugins used alongside Graylog Search
+- **Final Repository Cleanup**: Removed nested plugins directory
+  - Companion plugins (ai-comment-moderator, stackpilot, web-embed) moved to parent directory
+  - Clean, production-ready structure
+  - Only Graylog Search plugin files remain in repository
+
+### Note
+- v1.0.6 temporarily restored companion plugins but they have been relocated
+- This version represents the final clean state of the repository
 
 ## [1.0.5] - 2025-10-17
 
