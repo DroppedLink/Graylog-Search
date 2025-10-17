@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom field mappings
 - Email alerts for saved searches
 
+## [1.0.5] - 2025-10-17
+
+### Changed
+- **Repository Restructure**: Complete repository reorganization
+  - Moved all plugin files from `plugins/graylog-search/` to root directory
+  - Clean structure ensures proper WordPress plugin installation
+  - Downloads now extract to correct `graylog-search/` folder
+  - GitHub releases and clones work correctly
+
+### Removed
+- Backup folders and development artifacts
+- Unrelated plugin folders (ai-comment-moderator, stackpilot, web-embed)
+- Development documentation files that cluttered the repository
+
 ## [1.0.4] - 2025-10-17
 
 ### Fixed
