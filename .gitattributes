@@ -1,0 +1,41 @@
+# Git export configuration
+# Files and directories excluded from release archives
+
+# Git files
+.git* export-ignore
+
+# GitHub configuration
+.github/ export-ignore
+
+# Documentation (except readme.txt for WordPress.org)
+*.md export-ignore
+!readme.txt
+
+# Development files
+phpcs.xml export-ignore
+.phpcs.xml.dist export-ignore
+composer.json export-ignore
+composer.lock export-ignore
+package.json export-ignore
+package-lock.json export-ignore
+node_modules/ export-ignore
+
+# Testing files
+tests/ export-ignore
+.phpunit.result.cache export-ignore
+phpunit.xml export-ignore
+
+# IDE files
+.vscode/ export-ignore
+.idea/ export-ignore
+*.code-workspace export-ignore
+
+# OS files
+.DS_Store export-ignore
+Thumbs.db export-ignore
+
+# Backup files
+*.bak export-ignore
+*.backup export-ignore
+backups/ export-ignore
+

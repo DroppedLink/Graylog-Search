@@ -1,0 +1,87 @@
+# WordPress
+*.log
+.htaccess
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# IDE Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+.project
+.settings/
+.buildpath
+
+# Node/NPM (if using build tools)
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn.lock
+package-lock.json
+
+# Composer
+/vendor/
+composer.lock
+
+# Build artifacts
+/build/
+/dist/
+*.zip
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# Test files
+/tests/
+/test/
+phpunit.xml
+.phpunit.result.cache
+
+# CI/CD
+.travis.yml
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.backup
+backups/
+
+# Cache
+.cache/
+*.cache
+
+# Logs
+logs/
+*.log
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Documentation build
+/docs/_build/
+
+# Local development
+local-config.php
+wp-config-local.php
+
+# Plan files (Cursor-specific)
+*.plan.md
+

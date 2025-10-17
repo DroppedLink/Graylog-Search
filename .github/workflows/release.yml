@@ -1,0 +1,71 @@
+name: Build and Release Plugin
+
+on:
+  release:
+    types: [created, published]
+
+jobs:
+  build:
+    name: Build Plugin ZIP
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Get version from tag
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+      
+      - name: Create plugin directory structure
+        run: |
+          mkdir -p build/graylog-search
+          
+      - name: Copy plugin files (respecting .gitattributes)
+        run: |
+          # Use git archive to respect .gitattributes export-ignore rules
+          git archive HEAD | tar -x -C build/graylog-search
+          
+      - name: Verify plugin structure
+        run: |
+          echo "Verifying plugin files..."
+          ls -la build/graylog-search/
+          echo "---"
+          echo "Checking for main plugin file..."
+          test -f build/graylog-search/graylog-search.php && echo "✓ Main plugin file found"
+          echo "Checking for includes directory..."
+          test -d build/graylog-search/includes && echo "✓ Includes directory found"
+          echo "Checking for assets directory..."
+          test -d build/graylog-search/assets && echo "✓ Assets directory found"
+          
+      - name: Create ZIP archive
+        run: |
+          cd build
+          zip -r graylog-search.zip graylog-search/
+          cd ..
+          mv build/graylog-search.zip graylog-search.zip
+          
+      - name: Verify ZIP file
+        run: |
+          echo "ZIP file created:"
+          ls -lh graylog-search.zip
+          echo "---"
+          echo "ZIP contents:"
+          unzip -l graylog-search.zip | head -30
+          
+      - name: Upload ZIP to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: graylog-search.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Success message
+        run: |
+          echo "✓ Plugin ZIP built successfully!"
+          echo "✓ Uploaded to release: ${{ github.event.release.name }}"
+          echo "✓ Download URL: ${{ github.event.release.html_url }}"
+
