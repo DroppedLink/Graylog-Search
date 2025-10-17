@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom field mappings
 - Email alerts for saved searches
 
+## [1.0.6] - 2025-10-17
+
+### Changed
+- **Restored Development Plugins**: Re-added plugin folders that were accidentally removed
+  - plugins/ai-comment-moderator/
+  - plugins/stackpilot/
+  - plugins/web-embed/
+  - These are development/companion plugins used alongside Graylog Search
+
 ## [1.0.5] - 2025-10-17
 
 ### Changed
