@@ -39,6 +39,7 @@ function graylog_search_settings_page() {
         update_option('graylog_api_token', sanitize_text_field($_POST['graylog_api_token']));
         update_option('graylog_search_disable_ssl_verify', isset($_POST['disable_ssl_verify']) ? '1' : '0');
         update_option('graylog_search_github_token', sanitize_text_field($_POST['github_token']));
+        update_option('graylog_search_delete_on_uninstall', isset($_POST['delete_on_uninstall']) ? '1' : '0');
         
         echo '<div class="notice notice-success"><p>Settings saved successfully!</p></div>';
     }
@@ -47,6 +48,7 @@ function graylog_search_settings_page() {
     $api_token = get_option('graylog_api_token', '');
     $disable_ssl = get_option('graylog_search_disable_ssl_verify', '0');
     $github_token = get_option('graylog_search_github_token', '');
+    $delete_on_uninstall = get_option('graylog_search_delete_on_uninstall', '0');
     
     // Get update status
     $update_status = Graylog_Search_GitHub_Updater::get_update_status();
@@ -153,6 +155,29 @@ function graylog_search_settings_page() {
                                class="regular-text"
                                placeholder="ghp_xxxxxxxxxxxx">
                         <p class="description">Optional: Increases GitHub API rate limits for update checks. Not required for public repositories.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="delete_on_uninstall">Uninstall Options</label>
+                    </th>
+                    <td>
+                        <label>
+                            <input type="checkbox" 
+                                   id="delete_on_uninstall" 
+                                   name="delete_on_uninstall" 
+                                   value="1" 
+                                   <?php checked($delete_on_uninstall, '1'); ?>>
+                            Delete all plugin data when uninstalling
+                        </label>
+                        <p class="description" style="color: #d63638;">
+                            <strong>⚠️ Warning:</strong> When enabled, uninstalling the plugin will permanently delete:
+                            <br>• Search history database table (<?php global $wpdb; echo $wpdb->prefix; ?>graylog_search_history)
+                            <br>• All plugin settings and API credentials
+                            <br>• Saved searches and user preferences
+                            <br>• All cached data and transients
+                            <br><br><strong>This action cannot be undone!</strong> Keep this disabled if you plan to reinstall the plugin later.
+                        </p>
                     </td>
                 </tr>
             </table>

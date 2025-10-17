@@ -59,7 +59,7 @@ class SavedSearches {
 		$search_data = array(
 			'search_query' => Security::sanitize_search_query( Security::get_post( 'search_query', '' ) ),
 			'search_mode'  => Security::sanitize_text( Security::get_post( 'search_mode', 'simple' ) ),
-			'filter_out'   => Security::sanitize_text( Security::get_post( 'filter_out', '' ) ),
+			'filter_out'   => Security::sanitize_multiline_input( Security::get_post( 'filter_out', '' ) ),
 			'time_range'   => absint( Security::get_post( 'time_range', 86400 ) ),
 			'created'      => current_time( 'mysql' ),
 		);

@@ -23,9 +23,11 @@ function graylog_search_logs_handler() {
     error_log('Graylog Search: Permission check passed');
     
     // Get search parameters
-    $search_query = sanitize_textarea_field($_POST['search_query']);
+    // Note: Using wp_strip_all_tags instead of sanitize_textarea_field to preserve newlines
+    // sanitize_textarea_field converts newlines to spaces, breaking multi-line search
+    $search_query = trim(wp_strip_all_tags(wp_unslash($_POST['search_query'])));
     $search_mode = sanitize_text_field($_POST['search_mode']); // 'simple', 'advanced', or 'query_builder'
-    $filter_out = sanitize_text_field($_POST['filter_out']);
+    $filter_out = trim(wp_strip_all_tags(wp_unslash($_POST['filter_out'])));
     $time_range = intval($_POST['time_range']);
     $limit = intval($_POST['limit']);
     $offset = isset($_POST['offset']) ? intval($_POST['offset']) : 0;
@@ -179,33 +181,17 @@ function graylog_build_query($search_query, $search_mode, $filter_out) {
                 // Escape special Lucene characters except * and ?
                 $term = preg_replace('/([+\-&|!(){}\[\]^"~:\\\])/', '\\\\$1', $term);
                 
-                // For phrases (terms with spaces), we can't use wildcards in quotes
-                // For single words, add trailing wildcard
-                if (!$has_spaces) {
-                    // Add trailing wildcard for partial matching (unless user specified wildcards)
+                // Build simplified query without field specifications
+                // Graylog will search all fields automatically
+                if ($has_spaces) {
+                    // Phrase search - use quotes, no wildcards
+                    $term_queries[] = '"' . str_replace('*', '', $term) . '"';
+                } else {
+                    // Single word - add trailing wildcard for partial matching
                     if (strpos($term, '*') === false && strpos($term, '?') === false) {
                         $term = $term . '*';
                     }
-                }
-                
-                // Build a simple query that searches common fields
-                // Use OR for broad matching across fields
-                $fields = array('message', 'fqdn', 'source');
-                $field_parts = array();
-                
-                foreach ($fields as $field) {
-                    if ($has_spaces) {
-                        // Phrase search - must use quotes, no wildcards
-                        $field_parts[] = $field . ':"' . str_replace('*', '', $term) . '"';
-                    } else {
-                        // Single word - can use wildcards without quotes
-                        $field_parts[] = $field . ':' . $term;
-                    }
-                }
-                
-                // Combine fields for this term
-                if (count($field_parts) > 0) {
-                    $term_queries[] = '(' . implode(' OR ', $field_parts) . ')';
+                    $term_queries[] = $term;
                 }
             }
             

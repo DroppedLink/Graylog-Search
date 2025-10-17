@@ -21,9 +21,10 @@ function graylog_save_search_handler() {
     
     $search_name = sanitize_text_field($_POST['name']);
     $search_data = array(
-        'search_query' => sanitize_textarea_field($_POST['search_query']),
+        // Use wp_strip_all_tags to preserve newlines (sanitize_textarea_field converts them to spaces)
+        'search_query' => trim(wp_strip_all_tags(wp_unslash($_POST['search_query']))),
         'search_mode' => sanitize_text_field($_POST['search_mode']),
-        'filter_out' => sanitize_text_field($_POST['filter_out']),
+        'filter_out' => trim(wp_strip_all_tags(wp_unslash($_POST['filter_out']))),
         'time_range' => intval($_POST['time_range']),
         'created' => current_time('mysql')
     );

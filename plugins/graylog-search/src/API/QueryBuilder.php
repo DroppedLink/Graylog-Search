@@ -72,7 +72,21 @@ class QueryBuilder {
 	 * @return array Array of query parts.
 	 */
 	private static function build_simple_query( $search_query ) {
+		// DEBUG: Log the raw search query.
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( '[QueryBuilder] Raw search_query: "' . $search_query . '"' );
+			error_log( '[QueryBuilder] Search query length: ' . strlen( $search_query ) );
+			error_log( '[QueryBuilder] Search query hex: ' . bin2hex( $search_query ) );
+		}
+		
 		$terms        = self::parse_multivalue_input( $search_query, false );
+		
+		// DEBUG: Log parsed terms.
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( '[QueryBuilder] Parsed terms count: ' . count( $terms ) );
+			error_log( '[QueryBuilder] Parsed terms: ' . print_r( $terms, true ) );
+		}
+		
 		$term_queries = array();
 
 		foreach ( $terms as $term ) {
@@ -87,31 +101,17 @@ class QueryBuilder {
 			// Escape special Lucene characters except * and ?.
 			$term = preg_replace( '/([+\-&|!(){}\[\]^"~:\\\])/', '\\\\$1', $term );
 
-			// For phrases, we can't use wildcards in quotes.
-			if ( ! $has_spaces ) {
-				// Add trailing wildcard for partial matching.
+			// Build simplified query without field specifications.
+			// Graylog will search all fields automatically.
+			if ( $has_spaces ) {
+				// Phrase search - use quotes, no wildcards.
+				$term_queries[] = '"' . str_replace( '*', '', $term ) . '"';
+			} else {
+				// Single word - add trailing wildcard for partial matching.
 				if ( false === strpos( $term, '*' ) && false === strpos( $term, '?' ) ) {
 					$term = $term . '*';
 				}
-			}
-
-			// Build query that searches common fields.
-			$fields      = array( 'message', 'fqdn', 'source' );
-			$field_parts = array();
-
-			foreach ( $fields as $field ) {
-				if ( $has_spaces ) {
-					// Phrase search - must use quotes, no wildcards.
-					$field_parts[] = $field . ':"' . str_replace( '*', '', $term ) . '"';
-				} else {
-					// Single word - can use wildcards without quotes.
-					$field_parts[] = $field . ':' . $term;
-				}
-			}
-
-			// Combine fields for this term.
-			if ( ! empty( $field_parts ) ) {
-				$term_queries[] = '(' . implode( ' OR ', $field_parts ) . ')';
+				$term_queries[] = $term;
 			}
 		}
 

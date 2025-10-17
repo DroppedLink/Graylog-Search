@@ -1,135 +1,152 @@
 === Graylog Search ===
-Contributors: DroppedLink
+Contributors: droppedlink
 Tags: graylog, logs, search, monitoring, api
 Requires at least: 5.0
 Tested up to: 6.7
-Requires PHP: 7.4
-Stable tag: 2.0.0
+Requires PHP: 7.2
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Simple interface for non-technical users to search Graylog logs via API
+A user-friendly WordPress plugin for searching and analyzing Graylog logs via API.
 
 == Description ==
 
-Graylog Search provides a WordPress-integrated interface to search and analyze Graylog logs without requiring users to access the Graylog interface directly.
+Graylog Search provides a powerful yet simple interface for searching Graylog logs directly from your WordPress admin. Perfect for network administrators, developers, and support teams who need quick access to log data without the complexity of the Graylog interface.
 
-= Features =
+= Key Features =
 
-* **Simple Search Interface** - Easy-to-use search with multiple terms support
-* **Regex Search** - Advanced pattern matching for power users
-* **Query Builder** - Visual interface for building complex queries
-* **Interactive Filtering** - Right-click any value to filter/exclude
-* **Saved Searches** - Save frequently used searches for quick access
-* **DNS Lookup** - Hover over IP addresses to resolve hostnames
-* **Export Results** - Export as CSV, JSON, or plain text
-* **Timezone Support** - Display results in any timezone
-* **Keyboard Shortcuts** - Efficient navigation and actions
-* **Shortcode Support** - Embed search interface on any page
-* **Auto-Updates** - Automatic updates from GitHub repository
+* **Simple Search Interface** - Easy-to-use form for searching logs by hostname, keywords, and time range
+* **IP Enrichment** - Automatic IP detection with reverse DNS lookup capabilities
+* **Timezone Conversion** - View timestamps in your local timezone
+* **Saved Searches** - Save and reuse your common search queries
+* **Dark Mode** - Full dark theme support with system preference detection
+* **Keyboard Shortcuts** - Power-user features for faster searching
+* **Export Results** - Export to CSV, JSON, or plain text
+* **Auto-Updates** - Automatic updates from GitHub releases
+* **Shortcode Support** - Embed search interface anywhere with `[graylog_search]`
 
-= Use Cases =
+= Perfect For =
 
-* Allow support staff to search logs without Graylog access
-* Create public-facing log search pages
-* Integrate log searching into existing WordPress workflows
-* Provide filtered log access to different user roles
+* Network administrators monitoring server logs
+* DevOps teams troubleshooting issues
+* Support teams investigating customer problems
+* Security teams analyzing access logs
+* Anyone who needs quick log access without leaving WordPress
+
+= Requirements =
+
+* Graylog 6.1+ with API access
+* Valid Graylog API token
+* WordPress 5.0+
+* PHP 7.2+
 
 == Installation ==
 
-1. Upload the plugin files to `/wp-content/plugins/graylog-search`
-2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Go to 'Graylog Search → Settings'
-4. Configure your Graylog API URL and token
-5. Test the connection
-6. Start searching logs!
+= From GitHub Release (Recommended) =
+
+1. Download the latest `graylog-search.zip` from [GitHub Releases](https://github.com/DroppedLink/Graylog-Search/releases)
+2. Go to WordPress Admin → Plugins → Add New
+3. Click "Upload Plugin"
+4. Choose the downloaded ZIP file
+5. Click "Install Now" and then "Activate"
 
 = Configuration =
 
-1. **API URL**: Full URL to your Graylog API (e.g., `https://graylog.example.com:9000/api`)
-2. **API Token**: Generate in Graylog: System → Users → Edit User → Create Token
-3. **SSL Verification**: Disable only for development with self-signed certificates
+1. Go to **Graylog Search → Settings** in WordPress admin
+2. Enter your Graylog API URL (e.g., `https://graylog.example.com:9000`)
+3. Enter your Graylog API Token
+4. Click "Save Settings"
+
+= Getting a Graylog API Token =
+
+1. Log into your Graylog web interface
+2. Go to System → Users → Select your user
+3. Go to "Edit Tokens" tab
+4. Create a new token
+5. Copy and paste into WordPress settings
 
 == Frequently Asked Questions ==
 
-= How do I get a Graylog API token? =
+= Do I need a Graylog server? =
 
-1. Log into your Graylog instance
-2. Go to System → Users
-3. Edit your user
-4. Click "Create Token"
-5. Give it a name and copy the generated token
+Yes, this plugin connects to an existing Graylog server via its API. You'll need:
+* A running Graylog server (6.1+ recommended)
+* Network access from WordPress to Graylog
+* A valid API token with read permissions
 
-= Can I use this on the frontend? =
+= Can I use this on a production site? =
 
-Yes! Use the `[graylog_search]` shortcode on any page or post. Configure it with:
-* `title` - Custom title
-* `show_filters` - Show/hide filter options (yes/no)
-* `result_limit` - Default result limit (50-500)
-* `time_range` - Default time range
+Yes! The plugin includes caching, security features, and proper WordPress integration for production use.
 
-Example: `[graylog_search title="Search Logs" result_limit="200"]`
+= How do updates work? =
 
-= What permissions are needed? =
+The plugin includes an auto-updater that checks GitHub for new releases. When available, you'll see update notifications in WordPress admin just like any other plugin.
 
-* **Search Logs**: Users need the `search_graylog_logs` capability or `read` capability
-* **Settings**: Only administrators can configure plugin settings
+= Can I restrict access? =
 
-= Does this work with Graylog 6.x? =
+Yes! You can control who sees the search interface using:
+* WordPress capabilities (manage_options by default)
+* Shortcode capability attribute: `[graylog_search capability="edit_posts"]`
 
-Yes! This plugin is compatible with Graylog 5.x and 6.x.
+= Does it work with custom streams? =
 
-= Can I disable SSL verification? =
+Yes, the plugin searches across all streams that your API token has access to.
 
-Yes, but it's not recommended for production. Only use this for development/testing with self-signed certificates.
+= Can I export search results? =
+
+Yes! Export results to CSV, JSON, or plain text format, or copy directly to clipboard.
+
+= Is SSL required? =
+
+SSL is recommended for production. For development environments, you can disable SSL verification in the settings.
 
 == Screenshots ==
 
-1. Simple search interface with multiple terms
-2. Regex search with pattern helper
-3. Query builder for complex queries
-4. Interactive filtering and DNS lookup
-5. Settings page with connection test
-6. Export results in multiple formats
+1. Main search interface with results
+2. IP enrichment with DNS lookup
+3. Dark mode interface
+4. Saved searches panel
+5. Settings page
+6. Keyboard shortcuts help
 
 == Changelog ==
 
-= 2.0.0 =
-* Complete refactoring to OOP architecture
-* Implemented WordPress coding standards
-* Added proper internationalization support
-* Enhanced security with input sanitization and output escaping
-* Extracted inline JavaScript to separate files
-* Added uninstall.php for proper cleanup
-* Improved Settings API integration
-* Added proper PHPDoc blocks
-* Removed production debug code
-* Better error handling and logging
-* Release Date: 2024
-
-= 1.0.0 =
+= 1.0.0 - 2025-10-17 =
 * Initial release
+* Core search functionality
+* IP enrichment with DNS lookups
+* Timezone conversion
+* Saved searches and history
+* Keyboard shortcuts
+* Dark mode support
+* Export to CSV/JSON/TXT
+* Auto-updates from GitHub
+* WordPress shortcode support
+* Interactive filtering
+* Query builder
+* Regex helper
 
 == Upgrade Notice ==
 
-= 2.0.0 =
-Major refactoring with improved security, coding standards, and maintainability. All settings and data are preserved during the upgrade.
+= 1.0.0 =
+Initial release with full feature set.
 
-== Additional Information ==
-
-= Keyboard Shortcuts =
-
-* `Ctrl/Cmd + Enter` - Submit search
-* `Ctrl/Cmd + K` - Clear search form
-* `Ctrl/Cmd + S` - Save current search
-* `Escape` - Close modals/popups
-* `?` - Show keyboard shortcuts
-
-= GitHub Repository =
-
-https://github.com/DroppedLink/Graylog-Search
+== Additional Info ==
 
 = Support =
+* GitHub Issues: https://github.com/DroppedLink/Graylog-Search/issues
+* Documentation: https://github.com/DroppedLink/Graylog-Search
 
-For bugs, feature requests, or contributions, please use the GitHub repository.
+= Contributing =
+Contributions are welcome! Visit the GitHub repository to submit pull requests or report issues.
+
+= Graylog Compatibility =
+* Fully compatible with Graylog 6.1+
+* May work with Graylog 5.x (not tested)
+* Uses modern API endpoints with automatic format handling
+
+== Privacy Policy ==
+
+This plugin does not collect, store, or transmit any user data. All searches are performed directly between your WordPress site and your Graylog server. API credentials are stored securely in your WordPress database.
 

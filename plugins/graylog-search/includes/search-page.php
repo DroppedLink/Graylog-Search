@@ -87,7 +87,7 @@ function graylog_search_page() {
                 <div class="graylog-tab-content active" data-content="simple">
                     <div class="tab-help-text">
                         <span class="dashicons dashicons-info"></span>
-                        <strong>Simple Mode:</strong> Enter any search terms. The plugin will automatically search across all log fields (message, hostname, source, level, etc.).
+                        <strong>Simple Mode:</strong> Enter search terms (one per line or comma-separated). Graylog will search across all log fields automatically. Multiple terms are combined with OR.
                     </div>
                     <table class="form-table">
                         <tr>

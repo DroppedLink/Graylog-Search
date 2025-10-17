@@ -1,115 +1,89 @@
 # Graylog Search WordPress Plugin
 
-A user-friendly WordPress plugin that allows non-technical users to search Graylog logs via the API.
+Simple interface for non-technical users to search Graylog logs via API.
 
 ## Features
 
-- **Simple Search Interface**: Easy-to-use form for searching logs
-- **FQDN Search**: Search by hostname/FQDN
-- **Additional Search Terms**: Add multiple keywords
-- **Filter Out Messages**: Exclude unwanted log entries
-- **Time Range Picker**: Search last hour, day, or week
-- **Dynamic Results Table**: Beautiful, responsive table with results
-- **Color-coded Log Levels**: Visual indicators for ERROR, WARNING, INFO, etc.
-- **Secure**: Uses WordPress nonces and capability checks
+- **Simple Search Mode** - Enter search terms, plugin searches all fields automatically
+- **Advanced Mode** - Full Lucene query syntax support
+- **Query Builder** - Visual query building (Beta)
+- **Multi-line Input** - Newline or comma-separated search terms
+- **Search History** - Track and re-run previous searches
+- **Saved Searches** - Save frequently used searches
+- **DNS Lookup** - Click IP addresses to resolve hostnames
+- **Timezone Support** - Convert timestamps to your timezone
+- **Export** - CSV, JSON, TXT, PDF formats
+- **Interactive Filtering** - Click to filter or highlight text
+- **GitHub Updates** - Automatic updates via GitHub Updater plugin
 
 ## Installation
 
-1. Download `graylog-search.zip` from [GitHub Releases](https://github.com/DroppedLink/Graylog-Search/releases)
-2. Go to WordPress Admin → Plugins → Add New
-3. Click "Upload Plugin"
-4. Choose the `graylog-search.zip` file
-5. Click "Install Now" and then "Activate"
-6. Go to **Graylog Search → Settings**
-7. Enter your Graylog API URL (e.g., `https://graylog.example.com:9000`)
-8. Enter your Graylog API token
-9. Save settings
+### Via WordPress Admin
 
-### Auto-Updates
+1. Download `graylog-search-X.X.X.zip` from [Releases](https://github.com/DroppedLink/Graylog-Search/releases)
+2. Go to WordPress Admin → Plugins → Add New → Upload Plugin
+3. Choose the downloaded zip file
+4. Click Install Now and Activate
 
-The plugin includes a built-in GitHub updater. When new versions are released:
-- Update notifications appear in WordPress admin
-- One-click updates from the Plugins page
-- Manual check available in **Graylog Search → Settings**
+### Via GitHub Updater
 
-See [AUTO_UPDATE_GUIDE.md](AUTO_UPDATE_GUIDE.md) for complete details.
+Install [GitHub Updater](https://github.com/afragen/github-updater) plugin and this plugin will auto-update from GitHub releases.
 
-## Getting a Graylog API Token
+## Configuration
 
-1. Log into your Graylog web interface
-2. Go to **System → Users**
-3. Click on your username
-4. Go to **Edit Tokens** tab
-5. Create a new token
-6. Copy the token and paste it into the plugin settings
+1. Go to **Graylog Search → Settings**
+2. Enter your Graylog API URL (e.g., `https://graylog.example.com:9000`)
+3. Enter your Graylog API Token
+4. Click **Test Connection** to verify
+5. Save Settings
 
 ## Usage
 
 ### Admin Interface
 
-1. Go to **Graylog Search** in the WordPress admin menu
-2. Fill in your search criteria:
-   - **FQDN**: Enter the hostname you want to search for
-   - **Additional Search Terms**: Add keywords like "error", "warning", etc.
-   - **Filter Out**: Exclude terms like "debug" or "info"
-   - **Time Range**: Select how far back to search
-   - **Result Limit**: Choose how many results to return
-3. Click **Search Logs**
-4. Results will appear in a nice table below
+Go to **Graylog Search** in WordPress admin menu to search logs.
 
-### Shortcode (Add to Any Page)
+### Shortcode
 
-Add the search interface to any page or post:
+Add search interface to any page or post:
 
 ```
 [graylog_search]
 ```
 
-**With custom height:**
+Optional attributes:
 ```
 [graylog_search height="800px"]
+[graylog_search capability="edit_posts"]
 ```
 
-**Admin-only:**
+## Search Examples
+
+**Simple Mode:**
 ```
-[graylog_search capability="manage_options"]
+error
+warning
+192.168.1.1
 ```
 
-See `SHORTCODE_GUIDE.md` for complete shortcode documentation.
-
-## File Structure
-
+**Advanced Mode:**
 ```
-graylog-search/
-├── graylog-search.php          # Main plugin file
-├── includes/
-│   ├── settings.php            # Settings page
-│   ├── search-page.php         # Search interface
-│   └── ajax-handler.php        # API communication
-├── assets/
-│   ├── css/
-│   │   └── style.css          # Plugin styles
-│   └── js/
-│       └── search.js          # Search functionality
-└── README.md                   # This file
+level:ERROR AND source:apache
+message:"connection refused" AND timestamp:[2024-01-01 TO 2024-01-31]
 ```
 
 ## Requirements
 
 - WordPress 5.0+
-- PHP 7.4+
-- Access to Graylog API
-- Valid Graylog API token
-
-## Security
-
-- All API requests are authenticated
-- User capabilities checked (manage_options)
-- Nonces used for AJAX requests
-- Input sanitization and output escaping
-- XSS protection
+- PHP 7.2+
+- Graylog 6.0+ (tested with 6.1)
 
 ## Support
 
-For issues or questions, contact your WordPress administrator.
+- [GitHub Issues](https://github.com/DroppedLink/Graylog-Search/issues)
+- [Changelog](CHANGELOG.md)
+
+## License
+
+GPL v2 or later
 

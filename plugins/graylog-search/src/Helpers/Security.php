@@ -50,13 +50,38 @@ class Security {
 	}
 
 	/**
-	 * Sanitize search query input.
+	 * Sanitize search query input while preserving newlines.
+	 *
+	 * WordPress's sanitize_textarea_field() converts newlines to spaces,
+	 * which breaks multi-line search functionality. This method preserves
+	 * newlines while still removing dangerous HTML and scripts.
 	 *
 	 * @param string $input Raw input.
-	 * @return string Sanitized input.
+	 * @return string Sanitized input with preserved newlines.
 	 */
 	public static function sanitize_search_query( $input ) {
-		return sanitize_textarea_field( wp_unslash( $input ) );
+		// Unslash the input.
+		$input = wp_unslash( $input );
+
+		// Remove HTML tags but preserve newlines.
+		$input = wp_strip_all_tags( $input, false );
+
+		// Normalize entities for security.
+		$input = wp_kses_normalize_entities( $input );
+
+		return trim( $input );
+	}
+
+	/**
+	 * Sanitize multi-line input (for filter_out and similar fields).
+	 *
+	 * Same as sanitize_search_query - preserves newlines for proper parsing.
+	 *
+	 * @param string $input Raw input.
+	 * @return string Sanitized input with preserved newlines.
+	 */
+	public static function sanitize_multiline_input( $input ) {
+		return self::sanitize_search_query( $input );
 	}
 
 	/**
