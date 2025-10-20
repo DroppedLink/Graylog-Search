@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom field mappings
 - Email alerts for saved searches
 
+## [1.0.9] - 2025-01-15
+
+### Fixed
+- **Improved JSON Detection**: Enhanced JSON parsing algorithm to properly handle deeply nested and complex JSON structures
+- **Parse Toggle**: Fixed parse functionality not working for complex multi-level JSON objects
+- **JSON Extraction**: Implemented proper bracket matching to extract complete JSON objects regardless of nesting depth
+
+### Changed
+- **JSON Parsing Algorithm**: Replaced regex-based detection with robust bracket-counting algorithm
+- **Error Handling**: Added comprehensive debug logging for JSON parsing failures
+
 ## [1.0.8] - 2025-01-15
 
 ### Added

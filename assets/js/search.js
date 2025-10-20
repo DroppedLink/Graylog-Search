@@ -1900,32 +1900,87 @@ jQuery(document).ready(function($) {
             return enrichMessageText(messageText, userTimezone);
         }
         
-        // If we have parsed fields and JSON was detected, format it nicely
-        if (parsedFields && parseFormats.json) {
-            // Try to detect and format JSON in the message
-            var jsonMatch = messageText.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/);
-            if (jsonMatch) {
+        // If JSON format is enabled, try to detect and format JSON
+        if (parseFormats.json) {
+            // Try to detect JSON in the message (improved regex for nested structures)
+            // First, try to find the entire JSON object even if deeply nested
+            var jsonMatch = null;
+            var jsonStartIdx = messageText.indexOf('{');
+            
+            if (jsonStartIdx !== -1) {
+                // Try to parse from the first { to see if we can get valid JSON
+                var depth = 0;
+                var inString = false;
+                var escape = false;
+                var jsonEndIdx = -1;
+                
+                for (var i = jsonStartIdx; i < messageText.length; i++) {
+                    var char = messageText[i];
+                    
+                    if (escape) {
+                        escape = false;
+                        continue;
+                    }
+                    
+                    if (char === '\\') {
+                        escape = true;
+                        continue;
+                    }
+                    
+                    if (char === '"') {
+                        inString = !inString;
+                        continue;
+                    }
+                    
+                    if (!inString) {
+                        if (char === '{') {
+                            depth++;
+                        } else if (char === '}') {
+                            depth--;
+                            if (depth === 0) {
+                                jsonEndIdx = i + 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (jsonEndIdx > jsonStartIdx) {
+                    jsonMatch = [messageText.substring(jsonStartIdx, jsonEndIdx)];
+                }
+            }
+            
+            if (jsonMatch && jsonMatch[0]) {
+                console.log('JSON detected, length:', jsonMatch[0].length); // Debug log
                 try {
                     var jsonObj = JSON.parse(jsonMatch[0]);
                     var formattedJson = JSON.stringify(jsonObj, null, 2);
+                    console.log('JSON successfully parsed and formatted'); // Debug log
                     
                     // Replace the JSON part in the message with formatted version
-                    var beforeJson = messageText.substring(0, messageText.indexOf(jsonMatch[0]));
-                    var afterJson = messageText.substring(messageText.indexOf(jsonMatch[0]) + jsonMatch[0].length);
+                    var beforeJson = messageText.substring(0, jsonStartIdx);
+                    var afterJson = messageText.substring(jsonEndIdx);
                     
-                    var enhancedMessage = beforeJson;
+                    var enhancedMessage = '';
+                    
+                    // Add text before JSON (if any)
                     if (beforeJson.trim()) {
-                        enhancedMessage += '\n';
-                    }
-                    enhancedMessage += '<pre class="formatted-json"><code>' + escapeHtml(formattedJson) + '</code></pre>';
-                    if (afterJson.trim()) {
-                        enhancedMessage += '\n' + afterJson;
+                        enhancedMessage += enrichMessageText(beforeJson, userTimezone) + '\n\n';
                     }
                     
-                    // Apply timezone conversion and IP enrichment to non-JSON parts
-                    return applyEnrichmentToText(enhancedMessage, userTimezone);
+                    // Add formatted JSON
+                    enhancedMessage += '<pre class="formatted-json"><code>' + escapeHtml(formattedJson) + '</code></pre>';
+                    
+                    // Add text after JSON (if any)
+                    if (afterJson.trim()) {
+                        enhancedMessage += '\n\n' + enrichMessageText(afterJson, userTimezone);
+                    }
+                    
+                    console.log('Returning formatted JSON message'); // Debug log
+                    return enhancedMessage;
                 } catch(e) {
                     // If JSON parsing fails, fall back to normal enrichment
+                    console.log('JSON parsing failed:', e); // Debug log
                     return enrichMessageText(messageText, userTimezone);
                 }
             }
