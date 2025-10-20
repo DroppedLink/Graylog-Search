@@ -1672,3 +1672,47 @@ textarea.graylog-input {
     margin-bottom: 15px;
 }
 
+/* Formatted JSON Styles */
+.formatted-json {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 8px 0;
+    font-family: 'Courier New', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #333;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.formatted-json code {
+    background: none;
+    padding: 0;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+}
+
+/* Dark theme support for formatted JSON */
+@media (prefers-color-scheme: dark) {
+    .formatted-json {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+}
+
+/* Compact view for small screens */
+@media (max-width: 768px) {
+    .formatted-json {
+        padding: 8px;
+        font-size: 12px;
+        margin: 4px 0;
+    }
+}
+

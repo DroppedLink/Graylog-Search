@@ -13,6 +13,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom field mappings
 - Email alerts for saved searches
 
+## [1.0.8] - 2025-01-15
+
+### Added
+- **Enter Key Search Support**: Users can now press Enter in search boxes to trigger search
+- **Enhanced JSON Parsing**: Automatic JSON detection and formatting in log messages
+- **Formatted JSON Display**: Raw JSON is replaced with beautifully formatted, indented JSON
+- **Debug Logging**: Added console logging for parse toggle troubleshooting
+
+### Changed
+- **UI Improvements**: Removed "Graylog Search" title from shortcode output for cleaner interface
+- **Parse Function Enhancement**: JSON messages now display with syntax highlighting and proper formatting
+- **Responsive Design**: Added mobile-friendly styling for formatted JSON blocks
+
+### Fixed
+- **Parse Toggle Issues**: Added debugging to identify and resolve parse functionality problems
+
 ## [1.0.7] - 2025-10-17
 
 ### Changed

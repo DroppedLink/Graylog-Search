@@ -117,6 +117,17 @@ jQuery(document).ready(function($) {
         performSearch($(this), 'shortcode');
     });
     
+    // Handle Enter key in search query inputs
+    $(document).on('keydown', '.search-query-input', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            var $form = $(this).closest('form');
+            var interfaceType = $form.attr('id') === 'graylog-search-form' ? 'admin' : 'shortcode';
+            clearTimeout(debounceTimer);
+            performSearch($form, interfaceType);
+        }
+    });
+
     // Optional: Auto-search on input change (debounced)
     $(document).on('input', '.search-query-input', function() {
         // Only if enabled (not enabled by default to avoid unwanted API calls)
@@ -436,11 +447,9 @@ jQuery(document).ready(function($) {
             infoHtml += '<div class="log-level-container"><span class="log-level log-level-compact ' + levelClass + '">' + escapeHtml(level) + '</span></div>';
             infoHtml += '</div>';
             
-            // Enrich message text with clickable IP addresses AND convert embedded timestamps
-            var enrichedMessage = enrichMessageText(messageText, userTimezone);
-            
-            // Parse message if enabled
+            // Parse message if enabled and get enhanced display text
             var parsedFields = parseMessageText(messageText);
+            var displayMessage = getEnhancedDisplayMessage(messageText, parsedFields, userTimezone);
             
             // Store row data for exports
             var rowData = {
@@ -456,7 +465,7 @@ jQuery(document).ready(function($) {
             table += '<tr data-row-data=\'' + rowDataJson + '\'>';
             table += '<td class="column-info">' + infoHtml + '</td>';
             table += '<td class="column-message">';
-            table += '<div class="message-text">' + enrichedMessage + '</div>';
+            table += '<div class="message-text">' + displayMessage + '</div>';
             
             // Add row actions menu
             table += '<div class="row-actions-menu">';
@@ -1852,13 +1861,19 @@ jQuery(document).ready(function($) {
     // Toggle parse options
     $(document).on('change', '#parse-toggle', function() {
         parseEnabled = $(this).is(':checked');
+        console.log('Parse toggle changed:', parseEnabled); // Debug log
+        
+        // Show/hide parse format options for all instances
         $('.parse-format-options').toggle(parseEnabled);
         
         // Re-render results if available
         if (originalResultsData) {
             var interfaceType = $('.graylog-search-wrap').length > 0 ? 'admin' : 'shortcode';
             var $container = interfaceType === 'admin' ? $('.graylog-search-wrap') : $('.graylog-search-shortcode');
+            console.log('Re-rendering results with parse enabled:', parseEnabled); // Debug log
             displayResults(originalResultsData, $container, interfaceType);
+        } else {
+            console.log('No originalResultsData available for re-rendering'); // Debug log
         }
     });
     
@@ -1875,6 +1890,72 @@ jQuery(document).ready(function($) {
         }
     });
     
+    // Get enhanced display message with formatted JSON if applicable
+    function getEnhancedDisplayMessage(messageText, parsedFields, userTimezone) {
+        console.log('getEnhancedDisplayMessage called - parseEnabled:', parseEnabled, 'messageText length:', messageText ? messageText.length : 0); // Debug log
+        
+        if (!parseEnabled || !messageText) {
+            // If parsing is disabled, just return enriched message
+            console.log('Parse disabled or no message, returning enriched message'); // Debug log
+            return enrichMessageText(messageText, userTimezone);
+        }
+        
+        // If we have parsed fields and JSON was detected, format it nicely
+        if (parsedFields && parseFormats.json) {
+            // Try to detect and format JSON in the message
+            var jsonMatch = messageText.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/);
+            if (jsonMatch) {
+                try {
+                    var jsonObj = JSON.parse(jsonMatch[0]);
+                    var formattedJson = JSON.stringify(jsonObj, null, 2);
+                    
+                    // Replace the JSON part in the message with formatted version
+                    var beforeJson = messageText.substring(0, messageText.indexOf(jsonMatch[0]));
+                    var afterJson = messageText.substring(messageText.indexOf(jsonMatch[0]) + jsonMatch[0].length);
+                    
+                    var enhancedMessage = beforeJson;
+                    if (beforeJson.trim()) {
+                        enhancedMessage += '\n';
+                    }
+                    enhancedMessage += '<pre class="formatted-json"><code>' + escapeHtml(formattedJson) + '</code></pre>';
+                    if (afterJson.trim()) {
+                        enhancedMessage += '\n' + afterJson;
+                    }
+                    
+                    // Apply timezone conversion and IP enrichment to non-JSON parts
+                    return applyEnrichmentToText(enhancedMessage, userTimezone);
+                } catch(e) {
+                    // If JSON parsing fails, fall back to normal enrichment
+                    return enrichMessageText(messageText, userTimezone);
+                }
+            }
+        }
+        
+        // For non-JSON messages, return normally enriched message
+        return enrichMessageText(messageText, userTimezone);
+    }
+    
+    // Apply enrichment (IP addresses and timezone) to text that may contain HTML
+    function applyEnrichmentToText(text, userTimezone) {
+        if (!text) return '';
+        
+        // Split by <pre> tags to preserve formatted JSON
+        var parts = text.split(/(<pre[^>]*>.*?<\/pre>)/);
+        var result = '';
+        
+        for (var i = 0; i < parts.length; i++) {
+            if (parts[i].match(/^<pre/)) {
+                // This is a <pre> tag, don't modify it
+                result += parts[i];
+            } else {
+                // This is regular text, apply enrichment
+                result += enrichMessageText(parts[i], userTimezone);
+            }
+        }
+        
+        return result;
+    }
+
     // Parse message text
     function parseMessageText(messageText) {
         if (!parseEnabled || !messageText) {

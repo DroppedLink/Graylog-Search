@@ -46,8 +46,7 @@ function graylog_search_shortcode($atts) {
     ?>
     <div class="graylog-search-shortcode" id="<?php echo esc_attr($instance_id); ?>">
         <!-- Header with connection status -->
-        <div class="graylog-search-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-            <h2 style="margin: 0; font-size: 20px;">Graylog Search</h2>
+        <div class="graylog-search-header" style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
             <div style="display: flex; gap: 10px; align-items: center;">
                 <span id="connection-status" class="connection-status" title="Connection status">
                     <span class="status-dot status-unknown"></span>
