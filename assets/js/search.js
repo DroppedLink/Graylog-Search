@@ -1123,6 +1123,9 @@ jQuery(document).ready(function($) {
     // Escape HTML to prevent XSS
     function escapeHtml(text) {
         if (!text) return '';
+        if (typeof text !== 'string') {
+            text = String(text);
+        }
         var map = {
             '&': '&amp;',
             '<': '&lt;',
@@ -1130,7 +1133,7 @@ jQuery(document).ready(function($) {
             '"': '&quot;',
             "'": '&#039;'
         };
-        return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
     
     // Combined function to enrich message text with IP addresses and timestamp conversion
@@ -2456,6 +2459,10 @@ jQuery(document).ready(function($) {
     
     // Helper function to escape HTML
     function escapeHtml(text) {
+        if (!text) return '';
+        if (typeof text !== 'string') {
+            text = String(text);
+        }
         var map = {
             '&': '&amp;',
             '<': '&lt;',

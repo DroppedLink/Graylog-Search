@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom field mappings
 - Email alerts for saved searches
 
+## [1.0.10] - 2025-01-15
+
+### Fixed
+- **Critical Bug Fix**: Fixed "text.replace is not a function" error when clicking Parse toggle
+- **Type Safety**: Added proper null/undefined checks to both escapeHtml functions
+- **Type Coercion**: Added automatic string conversion for non-string values passed to escapeHtml
+
 ## [1.0.9] - 2025-01-15
 
 ### Fixed

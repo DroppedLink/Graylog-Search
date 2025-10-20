@@ -3,7 +3,7 @@
  * Plugin Name: Graylog Search
  * Plugin URI: https://github.com/DroppedLink/Graylog-Search
  * Description: Simple interface for non-technical users to search Graylog logs via API
- * Version: 1.0.9
+ * Version: 1.0.10
  * Author: DroppedLink
  * Author URI: https://github.com/DroppedLink
  * License: GPL v2 or later
@@ -19,7 +19,7 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('GRAYLOG_SEARCH_VERSION', '1.0.9');
+define('GRAYLOG_SEARCH_VERSION', '1.0.10');
 define('GRAYLOG_SEARCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GRAYLOG_SEARCH_PLUGIN_URL', plugin_dir_url(__FILE__));
 
